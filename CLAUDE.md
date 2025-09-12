@@ -1,0 +1,18 @@
+- Before starting a Task, read the PROJECT_STATUS.md file
+- After finishing a Task, write a PROJECT_STATUS.md file
+- Use `./run` for all build operations (build, test, package, install, all)
+- Run pre-commit on new or changed files
+- Fix especially pre-existing issues
+- Do not suppress warnings
+- If you change the README, first read it carefully. Only do sensible changes.
+- Do not restructure the README. You may make little improvements, though.
+- Test your implementation with unit or integration tests
+- Don't build brittle tests with too many mocks
+- Remove old implementations completely - no backward compatibility needed
+- Check API documentation for exact method names - don't assume naming patterns
+- Local Plugin API Javadoc: `./doc`
+- Visual Paradigm runs on Java 11, the plugin must compatible to Java 11
+- [Visual Paradigm Plugin API Java Doc](https://www.visual-paradigm.com/support/documents/pluginjavadoc/overview-summary.html)
+- [Create Use Case Diagram using Open API](https://knowhow.visual-paradigm.com/openapi/use-case-diagram/)
+- [Needsfile Schema](https://raw.githubusercontent.com/useblocks/sphinx-needs/refs/tags/5.1.0/sphinx_needs/needsfile.json)
+- [needimport](https://sphinx-needs.readthedocs.io/en/latest/directives/needimport.html)

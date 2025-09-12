@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="visual-paradigm-sphinx-plugin"
+        name="Sphinx-Needs"
+        provider="ORGATEX"
+        class="com.orgatex.vp.sphinx.VPSphinxPlugin">
+
+    <runtime>
+    </runtime>
+
+    <actionSets>
+
+        <actionSet id="sphinx.ActionSet1">
+            <toolbar id="sphinx.ActionSet1.Toolbar1"
+                     orientation="north"
+                     index="last"/>
+
+            <action id="sphinx.ActionSet1.export-diagram-to-sphinx"
+                    actionType="generalAction"
+                    label="Export to Sphinx-Needs"
+                    style="normal"
+                    icon="icons/sphinx/export_64x64.png"
+                    toolbarPath="sphinx.ActionSet1.Toolbar1/#">
+
+                <actionController class="com.orgatex.vp.sphinx.action.ExportDiagramToSphinxActionController"/>
+            </action>
+
+        </actionSet>
+
+    </actionSets>
+
+</plugin>
