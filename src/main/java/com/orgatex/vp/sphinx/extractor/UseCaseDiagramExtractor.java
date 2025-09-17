@@ -7,6 +7,7 @@ import com.vp.plugin.diagram.shape.IUseCaseUIModel;
 import com.vp.plugin.diagram.shape.IActorUIModel;
 import com.vp.plugin.diagram.connector.IIncludeUIModel;
 import com.vp.plugin.diagram.connector.IExtendUIModel;
+import com.vp.plugin.diagram.connector.IAssociationUIModel;
 import com.vp.plugin.model.IModelElement;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -14,6 +15,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.List;
+import java.util.Arrays;
 
 /**
  * Enhanced extractor that attempts to extract actual use cases from Visual Paradigm diagrams.
@@ -38,17 +41,20 @@ public class UseCaseDiagramExtractor {
         versionData.setCreated(timestamp);
         versionData.setCreator(new NeedsFile.Creator());
 
+        // Create mapping to track VP internal IDs to User IDs
+        Map<String, String> vpIdToUserId = new HashMap<>();
+
         // Extract use cases and actors from diagram elements
-        extractUseCasesAndActors(diagram, versionData);
+        extractUseCasesAndActors(diagram, versionData, vpIdToUserId);
 
         // Extract relationships (include/extend)
-        extractRelationships(diagram, versionData);
+        extractRelationships(diagram, versionData, vpIdToUserId);
 
         needsFile.addVersion("1.0", versionData);
         return needsFile;
     }
 
-    private static void extractUseCasesAndActors(IDiagramUIModel diagram, NeedsFile.VersionData versionData) {
+    private static void extractUseCasesAndActors(IDiagramUIModel diagram, NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
         try {
             // Get all diagram elements using the correct API
             IDiagramElement[] diagramElements = diagram.toDiagramElementArray();
@@ -57,13 +63,15 @@ public class UseCaseDiagramExtractor {
             Map<String, Set<String>> useCaseActors = new HashMap<>();
             Map<String, String> actorNames = new HashMap<>(); // actorId -> actorName
 
-            // First pass: collect all actors
+            // First pass: collect and export all actors
             for (IDiagramElement element : diagramElements) {
                 if (element instanceof IActorUIModel) {
                     IActorUIModel actorUI = (IActorUIModel) element;
                     IModelElement actorModel = actorUI.getModelElement();
                     if (actorModel != null) {
                         actorNames.put(actorModel.getId(), actorModel.getName());
+                        // Export actor as separate need
+                        processActor(actorModel, versionData, vpIdToUserId);
                     }
                 }
             }
@@ -79,7 +87,7 @@ public class UseCaseDiagramExtractor {
                         useCaseActors.put(useCaseModel.getId(), associatedActors);
 
                         // Create the use case need
-                        processUseCase(useCaseModel, versionData, associatedActors);
+                        processUseCase(useCaseModel, versionData, associatedActors, vpIdToUserId);
                     }
                 }
             }
@@ -90,7 +98,7 @@ public class UseCaseDiagramExtractor {
         }
     }
 
-    private static void extractRelationships(IDiagramUIModel diagram, NeedsFile.VersionData versionData) {
+    private static void extractRelationships(IDiagramUIModel diagram, NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
         try {
             // Get all diagram elements to find connectors
             IDiagramElement[] diagramElements = diagram.toDiagramElementArray();
@@ -98,6 +106,7 @@ public class UseCaseDiagramExtractor {
             // Maps to track relationships
             Map<String, Set<String>> includeRelationships = new HashMap<>();
             Map<String, Set<String>> extendRelationships = new HashMap<>();
+            Map<String, Set<String>> associateRelationships = new HashMap<>();
 
             for (IDiagramElement element : diagramElements) {
                 if (element instanceof IIncludeUIModel) {
@@ -106,11 +115,14 @@ public class UseCaseDiagramExtractor {
                 } else if (element instanceof IExtendUIModel) {
                     IExtendUIModel extendUI = (IExtendUIModel) element;
                     processExtendRelationship(extendUI, extendRelationships);
+                } else if (element instanceof IAssociationUIModel) {
+                    IAssociationUIModel associateUI = (IAssociationUIModel) element;
+                    processAssociateRelationship(associateUI, associateRelationships);
                 }
             }
 
             // Apply relationships to use cases
-            applyRelationshipsToNeeds(versionData, includeRelationships, extendRelationships);
+            applyRelationshipsToNeeds(versionData, includeRelationships, extendRelationships, associateRelationships, vpIdToUserId);
 
         } catch (Exception e) {
             System.err.println("Error extracting relationships: " + e.getMessage());
@@ -119,13 +131,23 @@ public class UseCaseDiagramExtractor {
     }
 
     private static void processUseCase(IModelElement useCase, NeedsFile.VersionData versionData,
-                                     Set<String> associatedActors) {
+                                     Set<String> associatedActors, Map<String, String> vpIdToUserId) {
         String name = useCase.getName();
         if (name == null || name.trim().isEmpty()) {
             name = "Unnamed Use Case";
         }
 
-        String id = sanitizeId("UC_" + name);
+        // Use Visual Paradigm's User ID field
+        String id = getUserId(useCase);
+
+        // Handle null User ID by skipping this use case if no User ID is set
+        if (id == null || id.trim().isEmpty()) {
+            System.err.println("Warning: Skipping use case '" + name + "' - no User ID set");
+            return; // Skip use cases without User ID
+        }
+
+        // Track VP internal ID to User ID mapping for relationship resolution
+        vpIdToUserId.put(useCase.getId(), id);
 
         // Avoid duplicates by checking for existing ID or appending number
         String finalId = id;
@@ -135,11 +157,11 @@ public class UseCaseDiagramExtractor {
             counter++;
         }
 
-        NeedsFile.Need need = new NeedsFile.Need(finalId, name, "req");
+        NeedsFile.Need need = new NeedsFile.Need(finalId, name, "uc");
         need.setContent(getDescription(useCase));
-        need.setStatus("open");
-        need.setSourceId(useCase.getId());
+        need.setStatus(getStatus(useCase));
         need.setElementType("UseCase");
+        need.setPriority(getRank(useCase));
 
         // Set tags including any associated actors
         List<String> tags = new ArrayList<>();
@@ -153,6 +175,46 @@ public class UseCaseDiagramExtractor {
             }
         }
 
+        need.setTags(String.join(", ", tags));
+
+        versionData.addNeed(need);
+    }
+
+    private static void processActor(IModelElement actor, NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
+        String name = actor.getName();
+        if (name == null || name.trim().isEmpty()) {
+            name = "Unnamed Actor";
+        }
+
+        // Use Visual Paradigm's User ID field for actors too
+        String id = getUserId(actor);
+
+        // Handle null User ID by skipping this actor if no User ID is set
+        if (id == null || id.trim().isEmpty()) {
+            System.err.println("Warning: Skipping actor '" + name + "' - no User ID set");
+            return; // Skip actors without User ID
+        }
+
+        // Track VP internal ID to User ID mapping for relationship resolution
+        vpIdToUserId.put(actor.getId(), id);
+
+        // Avoid duplicates by checking for existing ID or appending number
+        String finalId = id;
+        int counter = 1;
+        while (versionData.getNeeds().containsKey(finalId)) {
+            finalId = id + "_" + counter;
+            counter++;
+        }
+
+        NeedsFile.Need need = new NeedsFile.Need(finalId, name, "actor");
+        need.setContent(getDescription(actor));
+        need.setStatus("identify"); // Actors typically start in identify phase
+        need.setElementType("Actor");
+
+        // Set tags for actors
+        List<String> tags = new ArrayList<>();
+        tags.add("actor");
+        tags.add("stakeholder");
         need.setTags(String.join(", ", tags));
 
         versionData.addNeed(need);
@@ -259,11 +321,33 @@ public class UseCaseDiagramExtractor {
                 String toId = getToElementId(extendUI);
 
                 if (fromId != null && toId != null) {
-                    extendRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
+                    // In VP extend relationships, the direction is opposite to semantic meaning
+                    // VP: base -> extending, but semantically: extending extends base
+                    extendRelationships.computeIfAbsent(toId, k -> new HashSet<>()).add(fromId);
                 }
             }
         } catch (Exception e) {
             System.err.println("Error processing extend relationship: " + e.getMessage());
+        }
+    }
+
+    private static void processAssociateRelationship(IAssociationUIModel associateUI,
+                                                   Map<String, Set<String>> associateRelationships) {
+        try {
+            // Get the model element of the association relationship
+            IModelElement associateModel = associateUI.getModelElement();
+            if (associateModel != null) {
+                String fromId = getFromElementId(associateUI);
+                String toId = getToElementId(associateUI);
+
+                if (fromId != null && toId != null) {
+                    // For associations, we can create bidirectional links
+                    associateRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
+                    associateRelationships.computeIfAbsent(toId, k -> new HashSet<>()).add(fromId);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error processing associate relationship: " + e.getMessage());
         }
     }
 
@@ -276,6 +360,10 @@ public class UseCaseDiagramExtractor {
             if (fromElement instanceof IUseCaseUIModel) {
                 IUseCaseUIModel useCaseUI = (IUseCaseUIModel) fromElement;
                 IModelElement model = useCaseUI.getModelElement();
+                return model != null ? model.getId() : null;
+            } else if (fromElement instanceof IActorUIModel) {
+                IActorUIModel actorUI = (IActorUIModel) fromElement;
+                IModelElement model = actorUI.getModelElement();
                 return model != null ? model.getId() : null;
             }
         } catch (Exception e) {
@@ -300,6 +388,10 @@ public class UseCaseDiagramExtractor {
                 IUseCaseUIModel useCaseUI = (IUseCaseUIModel) toElement;
                 IModelElement model = useCaseUI.getModelElement();
                 return model != null ? model.getId() : null;
+            } else if (toElement instanceof IActorUIModel) {
+                IActorUIModel actorUI = (IActorUIModel) toElement;
+                IModelElement model = actorUI.getModelElement();
+                return model != null ? model.getId() : null;
             }
         } catch (Exception e) {
             try {
@@ -318,72 +410,80 @@ public class UseCaseDiagramExtractor {
             IUseCaseUIModel useCaseUI = (IUseCaseUIModel) shape;
             IModelElement model = useCaseUI.getModelElement();
             return model != null ? model.getId() : null;
+        } else if (shape instanceof IActorUIModel) {
+            IActorUIModel actorUI = (IActorUIModel) shape;
+            IModelElement model = actorUI.getModelElement();
+            return model != null ? model.getId() : null;
         }
         return null;
     }
 
     private static void applyRelationshipsToNeeds(NeedsFile.VersionData versionData,
                                                  Map<String, Set<String>> includeRelationships,
-                                                 Map<String, Set<String>> extendRelationships) {
-        // Create a map from source element ID to need ID for quick lookup
-        Map<String, String> sourceIdToNeedId = new HashMap<>();
-        for (NeedsFile.Need need : versionData.getNeeds().values()) {
-            if (need.getSourceId() != null) {
-                sourceIdToNeedId.put(need.getSourceId(), need.getId());
-            }
-        }
+                                                 Map<String, Set<String>> extendRelationships,
+                                                 Map<String, Set<String>> associateRelationships,
+                                                 Map<String, String> vpIdToUserId) {
 
-        // Apply include relationships
+        // Include relationships: populate "includes" field
         for (Map.Entry<String, Set<String>> entry : includeRelationships.entrySet()) {
-            String sourceElementId = entry.getKey();
-            String sourceNeedId = sourceIdToNeedId.get(sourceElementId);
+            String fromUserId = vpIdToUserId.get(entry.getKey());
+            if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
+                NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
+                List<String> includeLinks = new ArrayList<>();
+                if (fromNeed.getIncludesLinks() != null && !fromNeed.getIncludesLinks().trim().isEmpty()) {
+                    includeLinks.addAll(Arrays.asList(fromNeed.getIncludesLinks().split(",\\s*")));
+                }
 
-            if (sourceNeedId != null) {
-                NeedsFile.Need sourceNeed = versionData.getNeeds().get(sourceNeedId);
-                Set<String> targetElementIds = entry.getValue();
-                List<String> linkedNeedIds = new ArrayList<>();
-
-                for (String targetElementId : targetElementIds) {
-                    String targetNeedId = sourceIdToNeedId.get(targetElementId);
-                    if (targetNeedId != null) {
-                        linkedNeedIds.add(targetNeedId);
+                for (String toVpId : entry.getValue()) {
+                    String toUserId = vpIdToUserId.get(toVpId);
+                    if (toUserId != null && versionData.getNeeds().containsKey(toUserId)) {
+                        includeLinks.add(toUserId);
                     }
                 }
 
-                if (!linkedNeedIds.isEmpty()) {
-                    String existingLinks = sourceNeed.getLinks();
-                    if (existingLinks != null && !existingLinks.trim().isEmpty()) {
-                        linkedNeedIds.add(0, existingLinks);
-                    }
-                    sourceNeed.setLinks(String.join(", ", linkedNeedIds));
-                }
+                fromNeed.setIncludesLinks(String.join(", ", includeLinks));
             }
         }
 
-        // Apply extend relationships (similar to include)
+        // Extend relationships: populate "extends" field
         for (Map.Entry<String, Set<String>> entry : extendRelationships.entrySet()) {
-            String sourceElementId = entry.getKey();
-            String sourceNeedId = sourceIdToNeedId.get(sourceElementId);
+            String fromUserId = vpIdToUserId.get(entry.getKey());
+            if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
+                NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
+                List<String> extendLinks = new ArrayList<>();
+                if (fromNeed.getExtendsLinks() != null && !fromNeed.getExtendsLinks().trim().isEmpty()) {
+                    extendLinks.addAll(Arrays.asList(fromNeed.getExtendsLinks().split(",\\s*")));
+                }
 
-            if (sourceNeedId != null) {
-                NeedsFile.Need sourceNeed = versionData.getNeeds().get(sourceNeedId);
-                Set<String> targetElementIds = entry.getValue();
-                List<String> linkedNeedIds = new ArrayList<>();
-
-                for (String targetElementId : targetElementIds) {
-                    String targetNeedId = sourceIdToNeedId.get(targetElementId);
-                    if (targetNeedId != null) {
-                        linkedNeedIds.add(targetNeedId);
+                for (String toVpId : entry.getValue()) {
+                    String toUserId = vpIdToUserId.get(toVpId);
+                    if (toUserId != null && versionData.getNeeds().containsKey(toUserId)) {
+                        extendLinks.add(toUserId);
                     }
                 }
 
-                if (!linkedNeedIds.isEmpty()) {
-                    String existingLinks = sourceNeed.getLinks();
-                    if (existingLinks != null && !existingLinks.trim().isEmpty()) {
-                        linkedNeedIds.add(0, existingLinks);
-                    }
-                    sourceNeed.setLinks(String.join(", ", linkedNeedIds));
+                fromNeed.setExtendsLinks(String.join(", ", extendLinks));
+            }
+        }
+
+        // Associate relationships: populate "associates" field
+        for (Map.Entry<String, Set<String>> entry : associateRelationships.entrySet()) {
+            String fromUserId = vpIdToUserId.get(entry.getKey());
+            if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
+                NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
+                List<String> associateLinks = new ArrayList<>();
+                if (fromNeed.getAssociatesLinks() != null && !fromNeed.getAssociatesLinks().trim().isEmpty()) {
+                    associateLinks.addAll(Arrays.asList(fromNeed.getAssociatesLinks().split(",\\s*")));
                 }
+
+                for (String toVpId : entry.getValue()) {
+                    String toUserId = vpIdToUserId.get(toVpId);
+                    if (toUserId != null && versionData.getNeeds().containsKey(toUserId)) {
+                        associateLinks.add(toUserId);
+                    }
+                }
+
+                fromNeed.setAssociatesLinks(String.join(", ", associateLinks));
             }
         }
     }
@@ -396,6 +496,88 @@ public class UseCaseDiagramExtractor {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    private static String getUserId(IModelElement element) {
+        try {
+            // Try to get the User ID field from Visual Paradigm
+            java.lang.reflect.Method getUserIdMethod = element.getClass().getMethod("getUserID");
+            Object result = getUserIdMethod.invoke(element);
+            if (result != null) {
+                return result.toString();
+            }
+        } catch (Exception e) {
+            // Method doesn't exist or failed, try alternative method names
+            try {
+                java.lang.reflect.Method getUserIdMethod = element.getClass().getMethod("getUserId");
+                Object result = getUserIdMethod.invoke(element);
+                if (result != null) {
+                    return result.toString();
+                }
+            } catch (Exception e2) {
+                // User ID method not available
+            }
+        }
+        return null;
+    }
+
+    private static String getRank(IModelElement element) {
+        try {
+            // Try getUcRank() method for use cases
+            java.lang.reflect.Method getUcRankMethod = element.getClass().getMethod("getUcRank");
+            Object result = getUcRankMethod.invoke(element);
+            if (result != null) {
+                int rank = (Integer) result;
+                // Convert VP rank constants to meaningful values
+                switch (rank) {
+                    case 1: return "high";    // UC_RANK_HIGH
+                    case 2: return "medium";  // UC_RANK_MEDIUM
+                    case 3: return "low";     // UC_RANK_LOW
+                    default: return null;     // UC_RANK_UNSPECIFIED
+                }
+            }
+        } catch (Exception e) {
+            // getUcRank method doesn't exist or failed
+        }
+
+        try {
+            // Try getPmPriority() method as fallback
+            java.lang.reflect.Method getPmPriorityMethod = element.getClass().getMethod("getPmPriority");
+            Object result = getPmPriorityMethod.invoke(element);
+            if (result != null) {
+                return result.toString();
+            }
+        } catch (Exception e) {
+            // getPmPriority method doesn't exist or failed
+        }
+
+        return null; // No rank/priority information found
+    }
+
+    private static String getStatus(IModelElement element) {
+        try {
+            // Try to get status from use case
+            java.lang.reflect.Method getStatusMethod = element.getClass().getMethod("getStatus");
+            Object result = getStatusMethod.invoke(element);
+            if (result != null) {
+                int status = (Integer) result;
+                // Convert VP status constants to meaningful values
+                switch (status) {
+                    case 0: return "identify";    // STATUS_IDENTIFY
+                    case 1: return "discuss";     // STATUS_DISCUSS
+                    case 2: return "elaborate";   // STATUS_ELABORATE
+                    case 3: return "design";      // STATUS_DESIGN
+                    case 4: return "consent";     // STATUS_CONSENT
+                    case 5: return "develop";     // STATUS_DEVELOP
+                    case 6: return "complete";    // STATUS_COMPLETE
+                    default: return "identify";   // Default to identify
+                }
+            }
+        } catch (Exception e) {
+            // getStatus method doesn't exist or failed
+        }
+
+        return "identify"; // Default status if no status information found
     }
 
     private static String sanitizeName(String input) {

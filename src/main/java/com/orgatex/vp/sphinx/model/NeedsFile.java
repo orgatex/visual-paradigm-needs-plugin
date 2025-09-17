@@ -80,10 +80,20 @@ public class NeedsFile {
         @JsonProperty("links")
         private String links = ""; // Comma-separated string
 
-        // Additional VP-specific fields
-        @JsonProperty("source_id")
-        private String sourceId;
+        // Custom link types for use case relationships
+        @JsonProperty("extends")
+        private String extendsLinks = ""; // Comma-separated string
 
+        @JsonProperty("includes")
+        private String includesLinks = ""; // Comma-separated string
+
+        @JsonProperty("associates")
+        private String associatesLinks = ""; // Comma-separated string
+
+        @JsonProperty("priority")
+        private String priority;
+
+        // Additional VP-specific fields
         @JsonProperty("element_type")
         private String elementType;
 

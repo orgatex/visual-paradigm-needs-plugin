@@ -39,7 +39,6 @@ public class BasicDiagramExtractor {
         diagramNeed.setContent("Use case diagram exported from Visual Paradigm");
         diagramNeed.setStatus("open");
         diagramNeed.setTags("diagram, exported");
-        diagramNeed.setSourceId(diagram.getId());
         diagramNeed.setElementType("Diagram");
 
         versionData.addNeed(diagramNeed);
