@@ -24,6 +24,16 @@
                 <actionController class="com.orgatex.vp.sphinx.action.ExportDiagramToSphinxActionController"/>
             </action>
 
+            <action id="sphinx.ActionSet1.import-needs-to-usecase-diagram"
+                    actionType="generalAction"
+                    label="Import from Sphinx-Needs"
+                    style="normal"
+                    icon="icons/sphinx/export_64x64.png"
+                    toolbarPath="sphinx.ActionSet1.Toolbar1/#">
+
+                <actionController class="com.orgatex.vp.sphinx.action.ImportNeedsToUseCaseDiagramActionController"/>
+            </action>
+
         </actionSet>
 
     </actionSets>
