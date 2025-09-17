@@ -1,5 +1,7 @@
-- Before starting a Task, read the PROJECT_STATUS.md file
-- After finishing a Task, write a PROJECT_STATUS.md file
+- Keep it simple stupid! Write straight forward, don't be smart.
+- No fallbacks, no big manipulations
+- Before starting a Task, read the PROJECT_STATUS.local.md file
+- After finishing a Task, write a PROJECT_STATUS.local.md file
 - Use `./run` for all build operations (build, test, package, install, all)
 - Run pre-commit on new or changed files
 - Fix especially pre-existing issues
@@ -11,6 +13,9 @@
 - Remove old implementations completely - no backward compatibility needed
 - Check API documentation for exact method names - don't assume naming patterns
 - Local Plugin API Javadoc: `./doc`
+- No useless inline comments, i.e. which are just describing what the
+  function or variable below does. That's what javadoc and clear naming is for.
+- Remove useless inline comments, when you see them.
 - Visual Paradigm runs on Java 11, the plugin must compatible to Java 11
 - [Visual Paradigm Plugin API Java Doc](https://www.visual-paradigm.com/support/documents/pluginjavadoc/overview-summary.html)
 - [Create Use Case Diagram using Open API](https://knowhow.visual-paradigm.com/openapi/use-case-diagram/)

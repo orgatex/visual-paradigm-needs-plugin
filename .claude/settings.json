@@ -1,0 +1,17 @@
+{
+    "permissions": {
+        "allow": [
+            "mcp__filesystem__directory_tree",
+            "mcp__filesystem__list_directory",
+            "mcp__filesystem__get_file_info",
+            "WebFetch(domain:www.visual-paradigm.com)"
+        ],
+        "deny": [
+            "WebSearch"
+        ]
+    },
+    "enableAllProjectMcpServers": true,
+    "enabledMcpjsonServers": [
+        "filesystem"
+    ]
+}
