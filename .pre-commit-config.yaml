@@ -31,9 +31,10 @@ repos:
     hooks:
       - id: maven-format
         name: Google Java Format
-        entry: mvn fmt:format
+        entry: mvn fmt:format -Pdev
         language: system
         files: '\.java$'
+        pass_filenames: false
 
       - id: maven-compile
         name: Maven compile check
@@ -49,9 +50,16 @@ repos:
         files: '\.(java|xml)$'
         pass_filenames: false
 
-      - id: maven-checkstyle
-        name: Checkstyle analysis
-        entry: mvn checkstyle:check
+      - id: maven-pmd
+        name: PMD analysis
+        entry: mvn pmd:check -Pdev
+        language: system
+        files: '\.java$'
+        pass_filenames: false
+
+      - id: maven-spotbugs
+        name: SpotBugs analysis
+        entry: mvn spotbugs:check -Pdev
         language: system
         files: '\.java$'
         pass_filenames: false

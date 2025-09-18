@@ -48,6 +48,8 @@ show_help() {
 	echo "  install     - Install plugin to Visual Paradigm"
 	echo "  uninstall   - Remove plugin from Visual Paradigm"
 	echo "  clean       - Clean build artifacts"
+	echo "  format      - Format code with Google Java Format"
+	echo "  lint        - Run PMD and SpotBugs analysis"
 	echo "  validate    - Validate plugin configuration"
 	echo "  standalone  - Test standalone MCP server"
 	echo "  health      - Check plugin health"
@@ -127,6 +129,20 @@ main() {
 		export MAVEN_OPTS
 		mvn install -P install
 		log_success "Plugin installed"
+		;;
+	format)
+		check_prerequisites
+		log_info "Formatting code with Google Java Format..."
+		export MAVEN_OPTS
+		mvn fmt:format -Pdev
+		log_success "Code formatting completed"
+		;;
+	lint)
+		check_prerequisites
+		log_info "Running PMD and SpotBugs analysis..."
+		export MAVEN_OPTS
+		mvn pmd:check spotbugs:check -Pdev
+		log_success "Code analysis completed"
 		;;
 	all)
 		check_prerequisites

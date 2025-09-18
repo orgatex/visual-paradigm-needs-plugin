@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
+
+    <!-- Exclude rules for Visual Paradigm plugin development -->
+
+    <!-- No exclusions for model serialization - these are important for JSON export -->
+
+    <!-- Exclude warnings about utility class constructors (handled by checkstyle) -->
+    <Match>
+        <Bug pattern="UUF_UNUSED_FIELD"/>
+    </Match>
+
+    <!-- Exclude false positives for reflection-based VP API calls -->
+    <Match>
+        <Class name="~.*\.extractor\..*"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+
+    <!-- Exclude generated code patterns if any -->
+    <Match>
+        <Class name="~.*\$.*"/>
+        <Bug pattern="NM_CLASS_NAMING_CONVENTION"/>
+    </Match>
+
+</FindBugsFilter>

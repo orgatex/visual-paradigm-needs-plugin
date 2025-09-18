@@ -1,10 +1,8 @@
 package com.orgatex.vp.sphinx.action;
 
 import com.orgatex.vp.sphinx.dialog.ImportNeedsToUseCaseDiagramDialog;
-import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.action.VPAction;
 import com.vp.plugin.action.VPActionController;
-
 import javax.swing.SwingUtilities;
 
 /**
@@ -12,18 +10,19 @@ import javax.swing.SwingUtilities;
  */
 public class ImportNeedsToUseCaseDiagramActionController implements VPActionController {
 
-    @Override
-    public void performAction(VPAction vpAction) {
-        // Show import dialog on EDT
-        SwingUtilities.invokeLater(() -> {
-            ImportNeedsToUseCaseDiagramDialog dialog = new ImportNeedsToUseCaseDiagramDialog();
-            dialog.setVisible(true);
+  @Override
+  public void performAction(VPAction vpAction) {
+    // Show import dialog on EDT
+    SwingUtilities.invokeLater(
+        () -> {
+          ImportNeedsToUseCaseDiagramDialog dialog = new ImportNeedsToUseCaseDiagramDialog();
+          dialog.setVisible(true);
         });
-    }
+  }
 
-    @Override
-    public void update(VPAction vpAction) {
-        // Always enable import action - no specific requirements needed
-        vpAction.setEnabled(true);
-    }
+  @Override
+  public void update(VPAction vpAction) {
+    // Always enable import action - no specific requirements needed
+    vpAction.setEnabled(true);
+  }
 }
