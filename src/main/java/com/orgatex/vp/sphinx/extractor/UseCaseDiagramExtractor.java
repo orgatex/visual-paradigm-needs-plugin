@@ -554,9 +554,10 @@ public class UseCaseDiagramExtractor {
           case 3:
             return "low"; // UC_RANK_LOW
           default:
-            return null; // UC_RANK_UNSPECIFIED
+            return ""; // UC_RANK_UNSPECIFIED
         }
       }
+      // If result is null, fall through to try next method
     } catch (Exception e) {
       // getUcRank method doesn't exist or failed
     }
@@ -568,11 +569,14 @@ public class UseCaseDiagramExtractor {
       if (result != null) {
         return result.toString();
       }
+      // If result is null, fall through to final fallback
     } catch (Exception e) {
       // getPmPriority method doesn't exist or failed
     }
 
-    return null; // No rank/priority information found
+    // Log warning for missing priority information but return empty string for schema compliance
+    System.err.println("Warning: No priority information found for element " + element.getName());
+    return ""; // No rank/priority information found - return empty for schema compliance
   }
 
   private static String getStatus(IModelElement element) {
