@@ -16,8 +16,7 @@
 - No useless inline comments, i.e. which are just describing what the
   function or variable below does. That's what javadoc and clear naming is for.
 - Remove useless inline comments, when you see them.
-- Visual Paradigm runs on Java 11, the plugin must compatible to Java 11
 - [Visual Paradigm Plugin API Java Doc](https://www.visual-paradigm.com/support/documents/pluginjavadoc/overview-summary.html)
 - [Create Use Case Diagram using Open API](https://knowhow.visual-paradigm.com/openapi/use-case-diagram/)
-- [Needsfile Schema](https://raw.githubusercontent.com/useblocks/sphinx-needs/refs/tags/5.1.0/sphinx_needs/needsfile.json)
+- Needsfile Schema: `./schemas/sphinx-needs-5.1.0-schema.json`
 - [needimport](https://sphinx-needs.readthedocs.io/en/latest/directives/needimport.html)
