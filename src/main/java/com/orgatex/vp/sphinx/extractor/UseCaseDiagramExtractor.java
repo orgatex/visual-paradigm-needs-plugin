@@ -17,7 +17,6 @@ import com.vp.plugin.model.IUseCase;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import lombok.AccessLevel;
@@ -193,7 +192,7 @@ public class UseCaseDiagramExtractor {
       }
     }
 
-    need.setTags(String.join(", ", tags));
+    need.setTags(tags);
 
     versionData.addNeed(need);
   }
@@ -235,7 +234,7 @@ public class UseCaseDiagramExtractor {
     List<String> tags = new ArrayList<>();
     tags.add("actor");
     tags.add("stakeholder");
-    need.setTags(String.join(", ", tags));
+    need.setTags(tags);
 
     versionData.addNeed(need);
   }
@@ -455,8 +454,8 @@ public class UseCaseDiagramExtractor {
       if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
         NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
         List<String> includeLinks = new ArrayList<>();
-        if (fromNeed.getIncludesLinks() != null && !fromNeed.getIncludesLinks().trim().isEmpty()) {
-          includeLinks.addAll(Arrays.asList(fromNeed.getIncludesLinks().split(",\\s*")));
+        if (fromNeed.getIncludesLinks() != null) {
+          includeLinks.addAll(fromNeed.getIncludesLinks());
         }
 
         for (String toVpId : entry.getValue()) {
@@ -466,7 +465,7 @@ public class UseCaseDiagramExtractor {
           }
         }
 
-        fromNeed.setIncludesLinks(String.join(", ", includeLinks));
+        fromNeed.setIncludesLinks(includeLinks);
       }
     }
 
@@ -476,8 +475,8 @@ public class UseCaseDiagramExtractor {
       if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
         NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
         List<String> extendLinks = new ArrayList<>();
-        if (fromNeed.getExtendsLinks() != null && !fromNeed.getExtendsLinks().trim().isEmpty()) {
-          extendLinks.addAll(Arrays.asList(fromNeed.getExtendsLinks().split(",\\s*")));
+        if (fromNeed.getExtendsLinks() != null) {
+          extendLinks.addAll(fromNeed.getExtendsLinks());
         }
 
         for (String toVpId : entry.getValue()) {
@@ -487,7 +486,7 @@ public class UseCaseDiagramExtractor {
           }
         }
 
-        fromNeed.setExtendsLinks(String.join(", ", extendLinks));
+        fromNeed.setExtendsLinks(extendLinks);
       }
     }
 
@@ -497,9 +496,8 @@ public class UseCaseDiagramExtractor {
       if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
         NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
         List<String> associateLinks = new ArrayList<>();
-        if (fromNeed.getAssociatesLinks() != null
-            && !fromNeed.getAssociatesLinks().trim().isEmpty()) {
-          associateLinks.addAll(Arrays.asList(fromNeed.getAssociatesLinks().split(",\\s*")));
+        if (fromNeed.getAssociatesLinks() != null) {
+          associateLinks.addAll(fromNeed.getAssociatesLinks());
         }
 
         for (String toVpId : entry.getValue()) {
@@ -509,7 +507,7 @@ public class UseCaseDiagramExtractor {
           }
         }
 
-        fromNeed.setAssociatesLinks(String.join(", ", associateLinks));
+        fromNeed.setAssociatesLinks(associateLinks);
       }
     }
   }
@@ -790,7 +788,7 @@ public class UseCaseDiagramExtractor {
       List<String> tags = new ArrayList<>();
       tags.add("usecase");
       tags.add("functional");
-      need.setTags(String.join(", ", tags));
+      need.setTags(tags);
 
       versionData.addNeed(need);
       System.out.println("Processed use case: " + finalId + " - " + name);

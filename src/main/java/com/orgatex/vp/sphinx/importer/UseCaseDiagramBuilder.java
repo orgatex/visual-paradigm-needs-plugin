@@ -16,6 +16,7 @@ import com.vp.plugin.model.factory.IModelElementFactory;
 import java.awt.Point;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -240,17 +241,18 @@ public class UseCaseDiagramBuilder {
 
   /** Create include relationships. */
   private int createIncludeRelationships(
-      IDiagramUIModel diagram, String sourceId, String includesLinks) throws Exception {
-    if (includesLinks == null || includesLinks.trim().isEmpty()) {
+      IDiagramUIModel diagram, String sourceId, List<String> includesLinks) throws Exception {
+    if (includesLinks == null || includesLinks.isEmpty()) {
       return 0;
     }
 
-    Set<String> targetIds = parseRelationshipTargets(includesLinks);
     int count = 0;
 
-    for (String targetId : targetIds) {
-      if (createIncludeRelationship(diagram, sourceId, targetId)) {
-        count++;
+    for (String targetId : includesLinks) {
+      if (targetId != null && !targetId.trim().isEmpty()) {
+        if (createIncludeRelationship(diagram, sourceId, targetId.trim())) {
+          count++;
+        }
       }
     }
 
@@ -259,17 +261,18 @@ public class UseCaseDiagramBuilder {
 
   /** Create extend relationships. */
   private int createExtendRelationships(
-      IDiagramUIModel diagram, String sourceId, String extendsLinks) throws Exception {
-    if (extendsLinks == null || extendsLinks.trim().isEmpty()) {
+      IDiagramUIModel diagram, String sourceId, List<String> extendsLinks) throws Exception {
+    if (extendsLinks == null || extendsLinks.isEmpty()) {
       return 0;
     }
 
-    Set<String> targetIds = parseRelationshipTargets(extendsLinks);
     int count = 0;
 
-    for (String targetId : targetIds) {
-      if (createExtendRelationship(diagram, sourceId, targetId)) {
-        count++;
+    for (String targetId : extendsLinks) {
+      if (targetId != null && !targetId.trim().isEmpty()) {
+        if (createExtendRelationship(diagram, sourceId, targetId.trim())) {
+          count++;
+        }
       }
     }
 
@@ -278,17 +281,18 @@ public class UseCaseDiagramBuilder {
 
   /** Create association relationships. */
   private int createAssociationRelationships(
-      IDiagramUIModel diagram, String sourceId, String associatesLinks) throws Exception {
-    if (associatesLinks == null || associatesLinks.trim().isEmpty()) {
+      IDiagramUIModel diagram, String sourceId, List<String> associatesLinks) throws Exception {
+    if (associatesLinks == null || associatesLinks.isEmpty()) {
       return 0;
     }
 
-    Set<String> targetIds = parseRelationshipTargets(associatesLinks);
     int count = 0;
 
-    for (String targetId : targetIds) {
-      if (createAssociationRelationship(diagram, sourceId, targetId)) {
-        count++;
+    for (String targetId : associatesLinks) {
+      if (targetId != null && !targetId.trim().isEmpty()) {
+        if (createAssociationRelationship(diagram, sourceId, targetId.trim())) {
+          count++;
+        }
       }
     }
 

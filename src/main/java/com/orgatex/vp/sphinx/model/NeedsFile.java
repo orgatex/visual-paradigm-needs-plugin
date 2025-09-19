@@ -1,14 +1,19 @@
 package com.orgatex.vp.sphinx.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Data;
 
 /** Root object for sphinx-needs JSON file format. */
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class NeedsFile {
+
   @JsonProperty("created")
   private String created;
 
@@ -26,6 +31,7 @@ public class NeedsFile {
   }
 
   @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public static class VersionData {
     @JsonProperty("created")
     private String created;
@@ -46,15 +52,20 @@ public class NeedsFile {
   }
 
   @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Creator {
     @JsonProperty("name")
     private String name = "Visual Paradigm Sphinx-Needs Plugin";
+
+    @JsonProperty("program")
+    private String program;
 
     @JsonProperty("version")
     private String version = "1.0.0";
   }
 
   @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Need {
     @JsonProperty("id")
     private String id;
@@ -72,20 +83,20 @@ public class NeedsFile {
     private String status;
 
     @JsonProperty("tags")
-    private String tags; // Comma-separated string
+    private List<String> tags = new ArrayList<>();
 
     @JsonProperty("links")
-    private String links = ""; // Comma-separated string
+    private List<String> links = new ArrayList<>();
 
     // Custom link types for use case relationships
     @JsonProperty("extends")
-    private String extendsLinks = ""; // Comma-separated string
+    private List<String> extendsLinks = new ArrayList<>();
 
     @JsonProperty("includes")
-    private String includesLinks = ""; // Comma-separated string
+    private List<String> includesLinks = new ArrayList<>();
 
     @JsonProperty("associates")
-    private String associatesLinks = ""; // Comma-separated string
+    private List<String> associatesLinks = new ArrayList<>();
 
     @JsonProperty("priority")
     @JsonInclude(JsonInclude.Include.NON_NULL)

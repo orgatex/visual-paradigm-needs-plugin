@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orgatex.vp.sphinx.model.NeedsFile;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -101,7 +102,7 @@ public class NeedsFileImporterTest {
     need2.setType("uc");
     need2.setElementType("UseCase");
     need2.setStatus("complete");
-    need2.setIncludesLinks("UC001");
+    need2.setIncludesLinks(Arrays.asList("UC001"));
 
     versionData.addNeed(need1);
     versionData.addNeed(need2);

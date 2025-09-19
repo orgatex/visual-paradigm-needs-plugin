@@ -4,6 +4,7 @@ import com.orgatex.vp.sphinx.model.NeedsFile;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -35,7 +36,7 @@ public class BasicDiagramExtractor {
     diagramNeed.setType("spec");
     diagramNeed.setContent("Use case diagram exported from Visual Paradigm");
     diagramNeed.setStatus("open");
-    diagramNeed.setTags("diagram, exported");
+    diagramNeed.setTags(Arrays.asList("diagram", "exported"));
     diagramNeed.setElementType("Diagram");
 
     versionData.addNeed(diagramNeed);
