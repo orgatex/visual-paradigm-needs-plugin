@@ -147,6 +147,8 @@ public class UseCaseDiagramBuilder {
       useCaseModel.setUserID(need.getId());
       // Set status if available and valid
       setUseCaseStatus(useCaseModel, need.getStatus());
+      // Set priority if available and valid
+      setUseCasePriority(useCaseModel, need.getPriority());
       System.out.println("DEBUG: Created new model with VP ID: " + useCaseModel.getId());
       System.out.println("Created new use case model: " + need.getId() + " - " + need.getTitle());
     }
@@ -429,6 +431,41 @@ public class UseCaseDiagramBuilder {
     } catch (Exception e) {
       System.err.println(
           "Warning: Could not set status '" + status + "' for use case: " + e.getMessage());
+    }
+  }
+
+  /** Set use case priority if valid. */
+  private void setUseCasePriority(IUseCase useCaseModel, String priority) {
+    if (priority == null || priority.trim().isEmpty()) {
+      return;
+    }
+
+    try {
+      // Map priority strings to VP rank constants
+      int vpRank = mapPriorityToVP(priority);
+      if (vpRank >= 0) {
+        // Use reflection to call setUcRank method
+        java.lang.reflect.Method setUcRankMethod =
+            useCaseModel.getClass().getMethod("setUcRank", int.class);
+        setUcRankMethod.invoke(useCaseModel, vpRank);
+      }
+    } catch (Exception e) {
+      System.err.println(
+          "Warning: Could not set priority '" + priority + "' for use case: " + e.getMessage());
+    }
+  }
+
+  /** Map priority string to Visual Paradigm rank constant. */
+  private int mapPriorityToVP(String priority) {
+    switch (priority.toLowerCase()) {
+      case "high":
+        return 1; // UC_RANK_HIGH
+      case "medium":
+        return 2; // UC_RANK_MEDIUM
+      case "low":
+        return 3; // UC_RANK_LOW
+      default:
+        return -1; // Unknown priority
     }
   }
 
