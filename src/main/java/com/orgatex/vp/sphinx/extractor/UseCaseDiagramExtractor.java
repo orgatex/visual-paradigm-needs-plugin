@@ -70,8 +70,7 @@ public class UseCaseDiagramExtractor {
 
       // First pass: collect and export all actors
       for (IDiagramElement element : diagramElements) {
-        if (element instanceof IActorUIModel) {
-          IActorUIModel actorUI = (IActorUIModel) element;
+        if (element instanceof IActorUIModel actorUI) {
           IModelElement actorModel = actorUI.getModelElement();
           if (actorModel != null) {
             actorNames.put(actorModel.getId(), actorModel.getName());
@@ -83,8 +82,7 @@ public class UseCaseDiagramExtractor {
 
       // Second pass: process use cases and link with actors
       for (IDiagramElement element : diagramElements) {
-        if (element instanceof IUseCaseUIModel) {
-          IUseCaseUIModel useCaseUI = (IUseCaseUIModel) element;
+        if (element instanceof IUseCaseUIModel useCaseUI) {
           IModelElement useCaseModel = useCaseUI.getModelElement();
           if (useCaseModel != null) {
             // Find associated actors (this will be enhanced when we process relationships)
@@ -117,14 +115,11 @@ public class UseCaseDiagramExtractor {
       Map<String, Set<String>> associateRelationships = new HashMap<>();
 
       for (IDiagramElement element : diagramElements) {
-        if (element instanceof IIncludeUIModel) {
-          IIncludeUIModel includeUI = (IIncludeUIModel) element;
+        if (element instanceof IIncludeUIModel includeUI) {
           processIncludeRelationship(includeUI, includeRelationships);
-        } else if (element instanceof IExtendUIModel) {
-          IExtendUIModel extendUI = (IExtendUIModel) element;
+        } else if (element instanceof IExtendUIModel extendUI) {
           processExtendRelationship(extendUI, extendRelationships);
-        } else if (element instanceof IAssociationUIModel) {
-          IAssociationUIModel associateUI = (IAssociationUIModel) element;
+        } else if (element instanceof IAssociationUIModel associateUI) {
           processAssociateRelationship(associateUI, associateRelationships);
         }
       }
@@ -379,12 +374,10 @@ public class UseCaseDiagramExtractor {
       java.lang.reflect.Method getFromMethod = connector.getClass().getMethod("getFrom");
       Object fromElement = getFromMethod.invoke(connector);
 
-      if (fromElement instanceof IUseCaseUIModel) {
-        IUseCaseUIModel useCaseUI = (IUseCaseUIModel) fromElement;
+      if (fromElement instanceof IUseCaseUIModel useCaseUI) {
         IModelElement model = useCaseUI.getModelElement();
         return model != null ? model.getId() : null;
-      } else if (fromElement instanceof IActorUIModel) {
-        IActorUIModel actorUI = (IActorUIModel) fromElement;
+      } else if (fromElement instanceof IActorUIModel actorUI) {
         IModelElement model = actorUI.getModelElement();
         return model != null ? model.getId() : null;
       }
@@ -407,12 +400,10 @@ public class UseCaseDiagramExtractor {
       java.lang.reflect.Method getToMethod = connector.getClass().getMethod("getTo");
       Object toElement = getToMethod.invoke(connector);
 
-      if (toElement instanceof IUseCaseUIModel) {
-        IUseCaseUIModel useCaseUI = (IUseCaseUIModel) toElement;
+      if (toElement instanceof IUseCaseUIModel useCaseUI) {
         IModelElement model = useCaseUI.getModelElement();
         return model != null ? model.getId() : null;
-      } else if (toElement instanceof IActorUIModel) {
-        IActorUIModel actorUI = (IActorUIModel) toElement;
+      } else if (toElement instanceof IActorUIModel actorUI) {
         IModelElement model = actorUI.getModelElement();
         return model != null ? model.getId() : null;
       }
@@ -429,12 +420,10 @@ public class UseCaseDiagramExtractor {
   }
 
   private static String extractElementId(Object shape) {
-    if (shape instanceof IUseCaseUIModel) {
-      IUseCaseUIModel useCaseUI = (IUseCaseUIModel) shape;
+    if (shape instanceof IUseCaseUIModel useCaseUI) {
       IModelElement model = useCaseUI.getModelElement();
       return model != null ? model.getId() : null;
-    } else if (shape instanceof IActorUIModel) {
-      IActorUIModel actorUI = (IActorUIModel) shape;
+    } else if (shape instanceof IActorUIModel actorUI) {
       IModelElement model = actorUI.getModelElement();
       return model != null ? model.getId() : null;
     }
@@ -552,16 +541,12 @@ public class UseCaseDiagramExtractor {
       if (result != null) {
         int rank = (Integer) result;
         // Convert VP rank constants to meaningful values
-        switch (rank) {
-          case 1:
-            return "high"; // UC_RANK_HIGH
-          case 2:
-            return "medium"; // UC_RANK_MEDIUM
-          case 3:
-            return "low"; // UC_RANK_LOW
-          default:
-            return ""; // UC_RANK_UNSPECIFIED
-        }
+        return switch (rank) {
+          case 1 -> "high"; // UC_RANK_HIGH
+          case 2 -> "medium"; // UC_RANK_MEDIUM
+          case 3 -> "low"; // UC_RANK_LOW
+          default -> ""; // UC_RANK_UNSPECIFIED
+        };
       }
       // If result is null, fall through to try next method
     } catch (Exception e) {
@@ -593,24 +578,16 @@ public class UseCaseDiagramExtractor {
       if (result != null) {
         int status = (Integer) result;
         // Convert VP status constants to meaningful values
-        switch (status) {
-          case 0:
-            return "identify"; // STATUS_IDENTIFY
-          case 1:
-            return "discuss"; // STATUS_DISCUSS
-          case 2:
-            return "elaborate"; // STATUS_ELABORATE
-          case 3:
-            return "design"; // STATUS_DESIGN
-          case 4:
-            return "consent"; // STATUS_CONSENT
-          case 5:
-            return "develop"; // STATUS_DEVELOP
-          case 6:
-            return "complete"; // STATUS_COMPLETE
-          default:
-            return "identify"; // Default to identify
-        }
+        return switch (status) {
+          case 0 -> "identify"; // STATUS_IDENTIFY
+          case 1 -> "discuss"; // STATUS_DISCUSS
+          case 2 -> "elaborate"; // STATUS_ELABORATE
+          case 3 -> "design"; // STATUS_DESIGN
+          case 4 -> "consent"; // STATUS_CONSENT
+          case 5 -> "develop"; // STATUS_DEVELOP
+          case 6 -> "complete"; // STATUS_COMPLETE
+          default -> "identify"; // Default to identify
+        };
       }
     } catch (Exception e) {
       // getStatus method doesn't exist or failed
@@ -672,10 +649,10 @@ public class UseCaseDiagramExtractor {
       Iterator<IModelElement> allModels = project.allLevelModelElementIterator();
       while (allModels.hasNext()) {
         IModelElement element = allModels.next();
-        if (element instanceof IUseCase) {
-          processUseCase((IUseCase) element, versionData, vpIdToUserId);
-        } else if (element instanceof IActor) {
-          processActor(element, versionData, vpIdToUserId);
+        if (element instanceof IUseCase useCase) {
+          processUseCase(useCase, versionData, vpIdToUserId);
+        } else if (element instanceof IActor actor) {
+          processActor(actor, versionData, vpIdToUserId);
         }
       }
 
@@ -692,10 +669,10 @@ public class UseCaseDiagramExtractor {
 
             // Only process if we haven't already processed this model
             if (!vpIdToUserId.containsKey(modelId)) {
-              if (modelElement instanceof IUseCase) {
-                processUseCase((IUseCase) modelElement, versionData, vpIdToUserId);
-              } else if (modelElement instanceof IActor) {
-                processActor(modelElement, versionData, vpIdToUserId);
+              if (modelElement instanceof IUseCase useCase) {
+                processUseCase(useCase, versionData, vpIdToUserId);
+              } else if (modelElement instanceof IActor actor) {
+                processActor(actor, versionData, vpIdToUserId);
               }
             }
           }
