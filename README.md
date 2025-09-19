@@ -1,7 +1,6 @@
 # Visual Paradigm Sphinx-Needs Plugin
 
-A Visual Paradigm plugin that exports use case diagrams to Sphinx-Needs compatible JSON format,
-enabling seamless integration between Visual Paradigm diagrams and Sphinx documentation systems.
+A Visual Paradigm plugin for bidirectional integration with Sphinx-Needs. Import and export use case diagrams in sphinx-needs JSON format with full support for real-world JSON files, relationships, and metadata.
 
 ## Architecture
 
@@ -12,26 +11,31 @@ enabling seamless integration between Visual Paradigm diagrams and Sphinx docume
 
 ## Features
 
-### Export Capabilities
+### Import/Export Capabilities
 
-- **Diagram Export**: Extract use case diagrams to JSON format
-- **Actor Export**: Export actors as separate needs with "actor" type
-- **Use Case Export**: Export use cases as separate needs with "uc" type
-- **Relationship Export**: Export Include, Extend, and Associate relationships as custom link types
-- **Metadata Retention**: Preserve Visual Paradigm source IDs and element types
+- **Bidirectional Support**: Both import and export sphinx-needs JSON files
+- **Real-world JSON Import**: Handles complete sphinx-needs JSON files with all metadata
+- **Actor Import/Export**: Import/export actors as separate needs with "actor" type
+- **Use Case Import/Export**: Import/export use cases as separate needs with "uc" type
+- **Relationship Handling**: Process Include, Extend, and Associate relationships as arrays
+- **Priority Support**: Import priority values and apply to Visual Paradigm use case rankings
+- **Model Reuse**: Intelligent reuse of existing Visual Paradigm models during import
+- **Metadata Preservation**: Preserve Visual Paradigm source IDs and element types
 
 ### JSON Format
 
-- **Sphinx-Needs Compatible**: Follows official needsfile schema
-- **Versioned Export**: Supports version tracking
-- **Structured Data**: Organized by actors, use cases, and relationships
-- **Import Ready**: Can be imported using sphinx-needs needimport directive
+- **Sphinx-Needs Compatible**: Follows official needsfile schema v5.1.0
+- **Native Array Support**: Uses proper JSON arrays instead of comma-separated strings
+- **Unknown Field Handling**: Gracefully ignores sphinx-needs metadata fields not needed for Visual Paradigm
+- **Versioned Data**: Supports version tracking and creator information
+- **Schema Validation**: Built-in validation against sphinx-needs schema
 
-### Validation Tools
+### Data Model
 
-- **Python Validator**: Validates exported JSON against sphinx-needs format
-- **Test Suite**: Sample data generation and validation
-- **Error Reporting**: Detailed validation feedback
+- **Type-Safe Arrays**: Uses `List<String>` for tags, links, and relationships
+- **Consistent Import/Export**: Same data structure for both operations
+- **Future-Proof**: Handles new sphinx-needs fields automatically
+- **Clean Architecture**: No string manipulation or parsing required
 
 ## Usage
 
@@ -50,7 +54,21 @@ Build, test and install with the `./run` command.
 7. Click "Export" to generate JSON file with relationships
 8. Import into Sphinx using `needimport` directive
 
-**Note**: Only elements (use cases and actors) with User IDs set will be exported. Relationships between exported elements will be included as custom link types.
+**Note**: Only elements (use cases and actors) with User IDs set will be exported. Relationships between exported elements will be included as JSON arrays.
+
+### Import Process
+
+1. Click the "Import from Sphinx-Needs" button in the toolbar
+2. Select a sphinx-needs JSON file (supports real-world files with complete metadata)
+3. The plugin will:
+   - Parse the JSON file and extract use cases and actors
+   - Create or reuse Visual Paradigm models intelligently
+   - Apply priority rankings to use cases (high/medium/low)
+   - Build Include, Extend, and Associate relationships
+   - Position elements in a new use case diagram
+4. Review the imported diagram and relationships
+
+**Note**: The plugin handles all sphinx-needs metadata automatically and ignores fields not relevant to Visual Paradigm.
 
 ### Sphinx Integration
 
