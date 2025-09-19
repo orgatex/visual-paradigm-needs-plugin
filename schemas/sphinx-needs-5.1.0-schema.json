@@ -22,7 +22,17 @@
                                      "properties": {
                                          "title": {"type": "string"},
                                          "id": {"type": "string"},
-                                         "content": {"type": "string"}
+                                         "content": {"type": "string"},
+                                         "type": {"type": "string"},
+                                         "status": {"type": "string"},
+                                         "tags": {"type": "string"},
+                                         "links": {"type": "string"},
+                                         "extends": {"type": "string"},
+                                         "includes": {"type": "string"},
+                                         "associates": {"type": "string"},
+                                         "priority": {"type": "string"},
+                                         "element_type": {"type": "string"},
+                                         "vp_model_id": {"type": "string"}
                                      }
                                  }
                              }

@@ -1,6 +1,8 @@
 package com.orgatex.vp.sphinx.extractor;
 
 import com.orgatex.vp.sphinx.model.NeedsFile;
+import com.vp.plugin.ApplicationManager;
+import com.vp.plugin.ProjectManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.connector.IAssociationUIModel;
@@ -8,11 +10,15 @@ import com.vp.plugin.diagram.connector.IExtendUIModel;
 import com.vp.plugin.diagram.connector.IIncludeUIModel;
 import com.vp.plugin.diagram.shape.IActorUIModel;
 import com.vp.plugin.diagram.shape.IUseCaseUIModel;
+import com.vp.plugin.model.IActor;
 import com.vp.plugin.model.IModelElement;
+import com.vp.plugin.model.IProject;
+import com.vp.plugin.model.IUseCase;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -41,11 +47,11 @@ public class UseCaseDiagramExtractor {
     // Create mapping to track VP internal IDs to User IDs
     Map<String, String> vpIdToUserId = new HashMap<>();
 
-    // Extract use cases and actors from diagram elements
-    extractUseCasesAndActors(diagram, versionData, vpIdToUserId);
+    // Extract ALL use cases and actors from the entire project
+    extractAllProjectUseCasesAndActors(versionData, vpIdToUserId);
 
-    // Extract relationships (include/extend)
-    extractRelationships(diagram, versionData, vpIdToUserId);
+    // Extract relationships from the entire project
+    extractAllProjectRelationships(versionData, vpIdToUserId);
 
     needsFile.addVersion("1.0", versionData);
     return needsFile;
@@ -173,6 +179,7 @@ public class UseCaseDiagramExtractor {
     need.setStatus(getStatus(useCase));
     need.setElementType("UseCase");
     need.setPriority(getRank(useCase));
+    need.setVpModelId(useCase.getId()); // Store Visual Paradigm model ID
 
     // Set tags including any associated actors
     List<String> tags = new ArrayList<>();
@@ -222,6 +229,7 @@ public class UseCaseDiagramExtractor {
     need.setContent(getDescription(actor));
     need.setStatus("identify"); // Actors typically start in identify phase
     need.setElementType("Actor");
+    need.setVpModelId(actor.getId()); // Store Visual Paradigm model ID
 
     // Set tags for actors
     List<String> tags = new ArrayList<>();
@@ -638,5 +646,156 @@ public class UseCaseDiagramExtractor {
         .replaceAll("[^a-z0-9_-]", "_")
         .replaceAll("_{2,}", "_")
         .replaceAll("^_+|_+$", "");
+  }
+
+  /** Extract all use cases and actors from the entire project. */
+  private static void extractAllProjectUseCasesAndActors(
+      NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
+    try {
+      ApplicationManager appManager = ApplicationManager.instance();
+      if (appManager == null) {
+        System.err.println("ApplicationManager not available (test environment)");
+        return;
+      }
+
+      ProjectManager projectManager = appManager.getProjectManager();
+      if (projectManager == null) {
+        System.err.println("ProjectManager not available");
+        return;
+      }
+
+      IProject project = projectManager.getProject();
+      if (project == null) {
+        System.err.println("No project found, cannot extract use cases");
+        return;
+      }
+
+      // Extract all use cases from project
+      Iterator<IModelElement> allModels = project.allLevelModelElementIterator();
+      while (allModels.hasNext()) {
+        IModelElement element = allModels.next();
+        if (element instanceof IUseCase) {
+          processUseCase((IUseCase) element, versionData, vpIdToUserId);
+        } else if (element instanceof IActor) {
+          processActor(element, versionData, vpIdToUserId);
+        }
+      }
+
+      // Also search through all diagrams for additional models
+      Iterator<IDiagramUIModel> diagrams = project.diagramIterator();
+      while (diagrams.hasNext()) {
+        IDiagramUIModel diagram = diagrams.next();
+        IDiagramElement[] diagramElements = diagram.toDiagramElementArray();
+
+        for (IDiagramElement diagramElement : diagramElements) {
+          IModelElement modelElement = diagramElement.getModelElement();
+          if (modelElement != null) {
+            String modelId = modelElement.getId();
+
+            // Only process if we haven't already processed this model
+            if (!vpIdToUserId.containsKey(modelId)) {
+              if (modelElement instanceof IUseCase) {
+                processUseCase((IUseCase) modelElement, versionData, vpIdToUserId);
+              } else if (modelElement instanceof IActor) {
+                processActor(modelElement, versionData, vpIdToUserId);
+              }
+            }
+          }
+        }
+      }
+
+      System.out.println(
+          "Extracted " + versionData.getNeeds().size() + " total elements from project");
+    } catch (Exception e) {
+      System.err.println("Error extracting project use cases and actors: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
+  /** Extract relationships from the entire project. */
+  private static void extractAllProjectRelationships(
+      NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
+    try {
+      ApplicationManager appManager = ApplicationManager.instance();
+      if (appManager == null) {
+        System.err.println("ApplicationManager not available (test environment)");
+        return;
+      }
+
+      ProjectManager projectManager = appManager.getProjectManager();
+      if (projectManager == null) {
+        System.err.println("ProjectManager not available");
+        return;
+      }
+
+      IProject project = projectManager.getProject();
+      if (project == null) {
+        System.err.println("No project found, cannot extract relationships");
+        return;
+      }
+
+      // Search through all diagrams for relationships
+      Iterator<IDiagramUIModel> diagrams = project.diagramIterator();
+      while (diagrams.hasNext()) {
+        IDiagramUIModel diagram = diagrams.next();
+
+        // Extract relationships from this diagram
+        extractRelationships(diagram, versionData, vpIdToUserId);
+      }
+
+      System.out.println("Extracted relationships from all diagrams in project");
+    } catch (Exception e) {
+      System.err.println("Error extracting project relationships: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+
+  /** Process a use case model element and add it to the needs data. */
+  private static void processUseCase(
+      IUseCase useCase, NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
+    try {
+      String name = useCase.getName();
+      if (name == null || name.trim().isEmpty()) {
+        name = "Unnamed Use Case";
+      }
+
+      // Use Visual Paradigm's User ID field
+      String id = getUserId(useCase);
+
+      // Handle null User ID by skipping this use case if no User ID is set
+      if (id == null || id.trim().isEmpty()) {
+        System.err.println("Warning: Skipping use case '" + name + "' - no User ID set");
+        return; // Skip use cases without User ID
+      }
+
+      // Track VP internal ID to User ID mapping for relationship resolution
+      vpIdToUserId.put(useCase.getId(), id);
+
+      // Avoid duplicates by checking for existing ID or appending number
+      String finalId = id;
+      int counter = 1;
+      while (versionData.getNeeds().containsKey(finalId)) {
+        finalId = id + "_" + counter;
+        counter++;
+      }
+
+      NeedsFile.Need need = new NeedsFile.Need(finalId, name, "uc");
+      need.setContent(getDescription(useCase));
+      need.setStatus(getStatus(useCase));
+      need.setElementType("UseCase");
+      need.setPriority(getRank(useCase));
+      need.setVpModelId(useCase.getId()); // Store Visual Paradigm model ID
+
+      // Set tags
+      List<String> tags = new ArrayList<>();
+      tags.add("usecase");
+      tags.add("functional");
+      need.setTags(String.join(", ", tags));
+
+      versionData.addNeed(need);
+      System.out.println("Processed use case: " + finalId + " - " + name);
+    } catch (Exception e) {
+      System.err.println("Error processing use case " + useCase.getName() + ": " + e.getMessage());
+    }
   }
 }

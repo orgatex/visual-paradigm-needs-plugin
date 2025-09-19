@@ -93,6 +93,9 @@ public class NeedsFile {
     @JsonProperty("element_type")
     private String elementType;
 
+    @JsonProperty("vp_model_id")
+    private String vpModelId;
+
     public Need(String id, String title, String type) {
       this.id = id;
       this.title = title;

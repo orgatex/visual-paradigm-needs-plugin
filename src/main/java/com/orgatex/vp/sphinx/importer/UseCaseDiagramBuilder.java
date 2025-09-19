@@ -25,6 +25,7 @@ public class UseCaseDiagramBuilder {
   private final DiagramManager diagramManager;
   private final IModelElementFactory modelFactory;
   private final ElementLayoutEngine layoutEngine;
+  private final ModelLookup modelLookup;
 
   // Track created elements for relationship creation
   private final Map<String, IDiagramElement> createdElements = new HashMap<>();
@@ -34,6 +35,7 @@ public class UseCaseDiagramBuilder {
     this.diagramManager = ApplicationManager.instance().getDiagramManager();
     this.modelFactory = IModelElementFactory.instance();
     this.layoutEngine = new ElementLayoutEngine();
+    this.modelLookup = new ModelLookup();
   }
 
   /**
@@ -109,15 +111,47 @@ public class UseCaseDiagramBuilder {
   /** Create a use case element in the diagram. */
   private void createUseCaseElement(IDiagramUIModel diagram, NeedsFile.Need need, Point position)
       throws Exception {
-    // Create the use case model
-    IUseCase useCaseModel = modelFactory.createUseCase();
-    useCaseModel.setName(need.getTitle());
-    useCaseModel.setUserID(need.getId());
+    System.out.println("=== DEBUG: Creating use case element ===");
+    System.out.println("Need ID: " + need.getId());
+    System.out.println("Need Title: " + need.getTitle());
+    System.out.println("Need VP Model ID: " + need.getVpModelId());
 
-    // Set status if available and valid
-    setUseCaseStatus(useCaseModel, need.getStatus());
+    IUseCase useCaseModel = null;
+    boolean isReusedModel = false;
 
-    // Create the diagram element
+    // Check if model already exists using Visual Paradigm model ID
+    if (need.getVpModelId() != null && !need.getVpModelId().trim().isEmpty()) {
+      System.out.println("DEBUG: Looking for existing model with VP ID: " + need.getVpModelId());
+      useCaseModel = modelLookup.findModelById(need.getVpModelId(), IUseCase.class);
+      if (useCaseModel != null) {
+        isReusedModel = true;
+        System.out.println(
+            "DEBUG: ✓ Found existing model! Name: "
+                + useCaseModel.getName()
+                + ", ID: "
+                + useCaseModel.getId());
+        System.out.println(
+            "Reusing existing use case model: " + need.getId() + " - " + need.getTitle());
+      } else {
+        System.out.println("DEBUG: ✗ No existing model found with VP ID: " + need.getVpModelId());
+      }
+    } else {
+      System.out.println("DEBUG: No VP Model ID provided, will create new model");
+    }
+
+    // Create new model if not found
+    if (useCaseModel == null) {
+      System.out.println("DEBUG: Creating new use case model...");
+      useCaseModel = modelFactory.createUseCase();
+      useCaseModel.setName(need.getTitle());
+      useCaseModel.setUserID(need.getId());
+      // Set status if available and valid
+      setUseCaseStatus(useCaseModel, need.getStatus());
+      System.out.println("DEBUG: Created new model with VP ID: " + useCaseModel.getId());
+      System.out.println("Created new use case model: " + need.getId() + " - " + need.getTitle());
+    }
+
+    // Create the diagram element (auxiliary view for reused models)
     IDiagramElement useCaseElement = diagramManager.createDiagramElement(diagram, useCaseModel);
 
     // Set position and size
@@ -131,18 +165,56 @@ public class UseCaseDiagramBuilder {
     createdElements.put(need.getId(), useCaseElement);
     createdModels.put(need.getId(), useCaseModel);
 
-    System.out.println("Created use case: " + need.getId() + " - " + need.getTitle());
+    if (isReusedModel) {
+      System.out.println(
+          "Added auxiliary view for use case: " + need.getId() + " - " + need.getTitle());
+    } else {
+      System.out.println("Created use case: " + need.getId() + " - " + need.getTitle());
+    }
   }
 
   /** Create an actor element in the diagram. */
   private void createActorElement(IDiagramUIModel diagram, NeedsFile.Need need, Point position)
       throws Exception {
-    // Create the actor model
-    IActor actorModel = modelFactory.createActor();
-    actorModel.setName(need.getTitle());
-    actorModel.setUserID(need.getId());
+    System.out.println("=== DEBUG: Creating actor element ===");
+    System.out.println("Need ID: " + need.getId());
+    System.out.println("Need Title: " + need.getTitle());
+    System.out.println("Need VP Model ID: " + need.getVpModelId());
 
-    // Create the diagram element
+    IActor actorModel = null;
+    boolean isReusedModel = false;
+
+    // Check if model already exists using Visual Paradigm model ID
+    if (need.getVpModelId() != null && !need.getVpModelId().trim().isEmpty()) {
+      System.out.println("DEBUG: Looking for existing actor with VP ID: " + need.getVpModelId());
+      actorModel = modelLookup.findModelById(need.getVpModelId(), IActor.class);
+      if (actorModel != null) {
+        isReusedModel = true;
+        System.out.println(
+            "DEBUG: ✓ Found existing actor! Name: "
+                + actorModel.getName()
+                + ", ID: "
+                + actorModel.getId());
+        System.out.println(
+            "Reusing existing actor model: " + need.getId() + " - " + need.getTitle());
+      } else {
+        System.out.println("DEBUG: ✗ No existing actor found with VP ID: " + need.getVpModelId());
+      }
+    } else {
+      System.out.println("DEBUG: No VP Model ID provided, will create new actor");
+    }
+
+    // Create new model if not found
+    if (actorModel == null) {
+      System.out.println("DEBUG: Creating new actor model...");
+      actorModel = modelFactory.createActor();
+      actorModel.setName(need.getTitle());
+      actorModel.setUserID(need.getId());
+      System.out.println("DEBUG: Created new actor with VP ID: " + actorModel.getId());
+      System.out.println("Created new actor model: " + need.getId() + " - " + need.getTitle());
+    }
+
+    // Create the diagram element (auxiliary view for reused models)
     IDiagramElement actorElement = diagramManager.createDiagramElement(diagram, actorModel);
 
     // Set position and size
@@ -156,7 +228,12 @@ public class UseCaseDiagramBuilder {
     createdElements.put(need.getId(), actorElement);
     createdModels.put(need.getId(), actorModel);
 
-    System.out.println("Created actor: " + need.getId() + " - " + need.getTitle());
+    if (isReusedModel) {
+      System.out.println(
+          "Added auxiliary view for actor: " + need.getId() + " - " + need.getTitle());
+    } else {
+      System.out.println("Created actor: " + need.getId() + " - " + need.getTitle());
+    }
   }
 
   /** Create include relationships. */

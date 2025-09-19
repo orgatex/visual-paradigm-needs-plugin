@@ -6,6 +6,8 @@ import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -116,7 +118,41 @@ public class NeedsFileImporter {
       throws ImportException {
     Map<String, NeedsFile.Need> needs = versionData.getNeeds();
 
+    System.out.println("=== DEBUG: Importing needs ===");
     System.out.println("Importing " + needs.size() + " needs into diagram: " + diagram.getName());
+
+    // Debug: List all models currently in the project
+    ModelDebugHelper.listAllModelsInProject();
+
+    // Debug: Print first few needs to verify vp_model_id is being read
+    int count = 0;
+    List<String> vpModelIds = new ArrayList<>();
+    for (Map.Entry<String, NeedsFile.Need> entry : needs.entrySet()) {
+      NeedsFile.Need need = entry.getValue();
+      System.out.println(
+          "DEBUG: Need "
+              + (count + 1)
+              + " - ID: "
+              + need.getId()
+              + ", Title: "
+              + need.getTitle()
+              + ", VP Model ID: "
+              + need.getVpModelId()
+              + ", Type: "
+              + need.getType());
+
+      if (need.getVpModelId() != null && !need.getVpModelId().trim().isEmpty()) {
+        vpModelIds.add(need.getVpModelId());
+      }
+
+      count++;
+      if (count >= 5) break; // Only show first 5 for debugging
+    }
+
+    // Debug: Search for the specific model IDs we're trying to reuse
+    if (!vpModelIds.isEmpty()) {
+      ModelDebugHelper.searchForSpecificIds(vpModelIds.toArray(new String[0]));
+    }
 
     // Step 1: Create all use case elements
     try {
