@@ -1,8 +1,7 @@
 package com.orgatex.vp.sphinx.dialog;
 
-import com.orgatex.vp.sphinx.extractor.UseCaseDiagramExtractor;
-import com.orgatex.vp.sphinx.generator.JsonExporter;
-import com.orgatex.vp.sphinx.model.NeedsFile;
+import com.orgatex.vp.sphinx.model.SphinxNeedsExportOption;
+import com.orgatex.vp.sphinx.service.SphinxNeedsExporter;
 import com.vp.plugin.ApplicationManager;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.project.IUserPath;
@@ -17,6 +16,7 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -30,15 +30,23 @@ public class ExportDiagramToSphinxDialog extends JDialog {
   private static final String USER_PATH_NAME = "sphinx_needs_export_destination";
 
   private final IDiagramUIModel diagram;
+  private final SphinxNeedsExporter exporter;
 
   private JTextField outputFileField;
   private JButton browseButton;
   private JButton exportButton;
   private JButton cancelButton;
 
+  // Export configuration options
+  private JCheckBox includeMetadataCheckBox;
+  private JCheckBox includeConnectionsCheckBox;
+  private JCheckBox includeActorsCheckBox;
+  private JCheckBox includeUseCasesCheckBox;
+
   public ExportDiagramToSphinxDialog(IDiagramUIModel diagram) {
     super((Frame) null, "Export to Sphinx-Needs", true);
     this.diagram = diagram;
+    this.exporter = new SphinxNeedsExporter();
     initializeComponents();
     layoutComponents();
     setupEventHandlers();
@@ -52,6 +60,13 @@ public class ExportDiagramToSphinxDialog extends JDialog {
     browseButton = new JButton("Browse...");
     exportButton = new JButton("Export");
     cancelButton = new JButton("Cancel");
+
+    // Initialize configuration checkboxes with default values
+    includeMetadataCheckBox =
+        new JCheckBox("Include metadata (description, priority, status)", true);
+    includeConnectionsCheckBox = new JCheckBox("Include connections between elements", true);
+    includeActorsCheckBox = new JCheckBox("Include actors", true);
+    includeUseCasesCheckBox = new JCheckBox("Include use cases", true);
 
     // Set output file path from saved preference or default
     String savedPath = getSavedExportDestination();
@@ -85,6 +100,7 @@ public class ExportDiagramToSphinxDialog extends JDialog {
     JPanel mainPanel = new JPanel(new GridBagLayout());
     GridBagConstraints gbc = new GridBagConstraints();
 
+    // Output file row
     gbc.gridx = 0;
     gbc.gridy = 0;
     gbc.anchor = GridBagConstraints.WEST;
@@ -102,6 +118,31 @@ public class ExportDiagramToSphinxDialog extends JDialog {
     gbc.weightx = 0;
     gbc.insets = new Insets(5, 5, 5, 10);
     mainPanel.add(browseButton, gbc);
+
+    // Configuration options section
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    gbc.gridwidth = 3;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.insets = new Insets(20, 10, 5, 10);
+    JLabel optionsLabel = new JLabel("Export Options:");
+    optionsLabel.setFont(optionsLabel.getFont().deriveFont(java.awt.Font.BOLD));
+    mainPanel.add(optionsLabel, gbc);
+
+    // Configuration checkboxes
+    gbc.gridy = 2;
+    gbc.insets = new Insets(5, 20, 5, 10);
+    mainPanel.add(includeMetadataCheckBox, gbc);
+
+    gbc.gridy = 3;
+    mainPanel.add(includeConnectionsCheckBox, gbc);
+
+    gbc.gridy = 4;
+    mainPanel.add(includeActorsCheckBox, gbc);
+
+    gbc.gridy = 5;
+    gbc.insets = new Insets(5, 20, 15, 10);
+    mainPanel.add(includeUseCasesCheckBox, gbc);
 
     add(mainPanel, BorderLayout.CENTER);
 
@@ -139,11 +180,11 @@ public class ExportDiagramToSphinxDialog extends JDialog {
     File outputFile = new File(outputPath);
 
     try {
-      // Extract diagram data
-      NeedsFile needsFile = UseCaseDiagramExtractor.extractDiagram(diagram);
+      // Build export option from dialog settings
+      SphinxNeedsExportOption exportOption = buildExportOption();
 
-      // Export to JSON
-      JsonExporter.exportToFile(needsFile, outputFile);
+      // Perform export using the new service
+      exporter.export(exportOption, outputFile);
 
       // Save the export destination for future use
       saveExportDestination(outputFile.getAbsolutePath());
@@ -155,6 +196,18 @@ public class ExportDiagramToSphinxDialog extends JDialog {
     } catch (Exception ex) {
       showError("Export failed: " + ex.getMessage());
     }
+  }
+
+  /** Build export option from current dialog settings. */
+  private SphinxNeedsExportOption buildExportOption() {
+    SphinxNeedsExportOption option = SphinxNeedsExportOption.toExportDiagram(diagram);
+
+    option.setIncludeMetadata(includeMetadataCheckBox.isSelected());
+    option.setIncludeConnections(includeConnectionsCheckBox.isSelected());
+    option.setIncludeActors(includeActorsCheckBox.isSelected());
+    option.setIncludeUseCases(includeUseCasesCheckBox.isSelected());
+
+    return option;
   }
 
   private void showError(String message) {
