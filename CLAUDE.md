@@ -3,6 +3,7 @@
 - Before starting a Task, read the PROJECT_STATUS.local.md file
 - After finishing a Task, write a PROJECT_STATUS.local.md file
 - Use `./run` for all build operations (build, test, package, install, all)
+- Always run `./run format` to keep the code formatted
 - Run pre-commit on new or changed files
 - Fix especially pre-existing issues
 - Do not suppress warnings
@@ -16,7 +17,7 @@
 - No useless inline comments, i.e. which are just describing what the
   function or variable below does. That's what javadoc and clear naming is for.
 - Remove useless inline comments, when you see them.
-- Make commits. Ensure pre-commit does not have any issues.
+- Commit your changes. Ensure pre-commit does not have any issues.
 - [Visual Paradigm Plugin API Java Doc](https://www.visual-paradigm.com/support/documents/pluginjavadoc/overview-summary.html)
 - [Create Use Case Diagram using Open API](https://knowhow.visual-paradigm.com/openapi/use-case-diagram/)
 - Needsfile Schema: `./schemas/sphinx-needs-5.1.0-schema.json`
