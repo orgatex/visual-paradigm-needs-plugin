@@ -74,6 +74,8 @@ public class UseCaseDiagramBuilder {
         createUseCaseElement(diagram, need, positions.get(needId));
       } else if (isActorNeed(need)) {
         createActorElement(diagram, need, positions.get(needId));
+      } else if (isRequirementNeed(need)) {
+        createRequirementElement(diagram, need, positions.get(needId));
       }
     }
 
@@ -240,6 +242,69 @@ public class UseCaseDiagramBuilder {
           "Added auxiliary view for actor: " + need.getId() + " - " + need.getTitle());
     } else {
       System.out.println("Created actor: " + need.getId() + " - " + need.getTitle());
+    }
+  }
+
+  /** Create requirement element and add to diagram. */
+  private void createRequirementElement(
+      IDiagramUIModel diagram, NeedsFile.Need need, Point position) throws Exception {
+    IModelElement requirementModel = null;
+    boolean isReusedModel = false;
+
+    // Check if we should reuse existing model
+    if (need.getVpModelId() != null && !need.getVpModelId().trim().isEmpty()) {
+      System.out.println(
+          "DEBUG: Looking for existing requirement with VP ID: " + need.getVpModelId());
+      requirementModel = modelLookup.findModelById(need.getVpModelId());
+      if (requirementModel != null) {
+        isReusedModel = true;
+        System.out.println(
+            "Reusing existing requirement model: " + need.getId() + " - " + need.getTitle());
+      } else {
+        System.out.println(
+            "DEBUG: ✗ No existing requirement found with VP ID: " + need.getVpModelId());
+      }
+    } else {
+      System.out.println("DEBUG: No VP Model ID provided, will create new requirement");
+    }
+
+    // Create new model if not found
+    if (requirementModel == null) {
+      System.out.println("DEBUG: Creating new requirement model...");
+      requirementModel = modelFactory.createRequirement();
+
+      // Set basic properties using reflection
+      setElementProperty(requirementModel, "setName", need.getTitle());
+      setElementProperty(requirementModel, "setUserID", need.getId());
+      setElementDescription(requirementModel, need.getContent());
+
+      // Set requirement-specific properties
+      setRequirementProperties(requirementModel, need);
+
+      System.out.println(
+          "Created new requirement model: " + need.getId() + " - " + need.getTitle());
+    }
+
+    // Create the diagram element
+    IDiagramElement requirementElement =
+        diagramManager.createDiagramElement(diagram, requirementModel);
+
+    // Set position and size
+    int width = 120;
+    int height = 60;
+    if (position != null) {
+      requirementElement.setBounds(position.x, position.y, width, height);
+    }
+
+    // Store for relationship creation
+    createdElements.put(need.getId(), requirementElement);
+    createdModels.put(need.getId(), requirementModel);
+
+    if (isReusedModel) {
+      System.out.println(
+          "Added auxiliary view for requirement: " + need.getId() + " - " + need.getTitle());
+    } else {
+      System.out.println("Created requirement: " + need.getId() + " - " + need.getTitle());
     }
   }
 
@@ -421,7 +486,12 @@ public class UseCaseDiagramBuilder {
 
   /** Check if a need represents an actor. */
   private boolean isActorNeed(NeedsFile.Need need) {
-    return "actor".equals(need.getType()) || "Actor".equals(need.getElementType());
+    return "act".equals(need.getType()) || "Actor".equals(need.getElementType());
+  }
+
+  /** Check if a need represents a requirement. */
+  private boolean isRequirementNeed(NeedsFile.Need need) {
+    return "req".equals(need.getType()) || "Requirement".equals(need.getElementType());
   }
 
   /** Set use case status if valid. */
@@ -508,5 +578,72 @@ public class UseCaseDiagramBuilder {
     } catch (Exception e) {
       System.err.println("Error setting element description: " + e.getMessage());
     }
+  }
+
+  /** Set element property using reflection. */
+  private void setElementProperty(Object element, String methodName, String value) {
+    try {
+      java.lang.reflect.Method method = element.getClass().getMethod(methodName, String.class);
+      method.invoke(element, value != null ? value : "");
+    } catch (Exception e) {
+      System.err.println("Error setting element property " + methodName + ": " + e.getMessage());
+    }
+  }
+
+  /** Set requirement-specific properties. */
+  private void setRequirementProperties(IModelElement requirement, NeedsFile.Need need) {
+    // Set priority if available
+    if (need.getPriority() != null && !need.getPriority().trim().isEmpty()) {
+      setRequirementPriority(requirement, need.getPriority());
+    }
+
+    // Set status if available
+    if (need.getStatus() != null && !need.getStatus().trim().isEmpty()) {
+      setRequirementStatus(requirement, need.getStatus());
+    }
+  }
+
+  /** Set requirement priority using reflection. */
+  private void setRequirementPriority(IModelElement requirement, String priority) {
+    try {
+      // Convert priority string to VP priority constant
+      int priorityValue = convertPriorityToVPConstant(priority);
+
+      // Try setPriority first
+      try {
+        java.lang.reflect.Method setPriorityMethod =
+            requirement.getClass().getMethod("setPriority", int.class);
+        setPriorityMethod.invoke(requirement, priorityValue);
+      } catch (Exception e) {
+        // Try setReqPriority as fallback
+        java.lang.reflect.Method setReqPriorityMethod =
+            requirement.getClass().getMethod("setReqPriority", int.class);
+        setReqPriorityMethod.invoke(requirement, priorityValue);
+      }
+    } catch (Exception e) {
+      System.err.println("Error setting requirement priority: " + e.getMessage());
+    }
+  }
+
+  /** Set requirement status using reflection. */
+  private void setRequirementStatus(IModelElement requirement, String status) {
+    try {
+      java.lang.reflect.Method setStatusMethod =
+          requirement.getClass().getMethod("setStatus", String.class);
+      setStatusMethod.invoke(requirement, status);
+    } catch (Exception e) {
+      System.err.println("Error setting requirement status: " + e.getMessage());
+    }
+  }
+
+  /** Convert priority string to VP priority constant. */
+  private int convertPriorityToVPConstant(String priority) {
+    return switch (priority.toLowerCase()) {
+      case "critical" -> 1;
+      case "high" -> 2;
+      case "medium" -> 3;
+      case "low" -> 4;
+      default -> 0; // Unspecified
+    };
   }
 }

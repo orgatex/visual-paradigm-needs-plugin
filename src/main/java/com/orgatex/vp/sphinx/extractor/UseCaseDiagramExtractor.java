@@ -46,8 +46,8 @@ public class UseCaseDiagramExtractor {
     // Create mapping to track VP internal IDs to User IDs
     Map<String, String> vpIdToUserId = new HashMap<>();
 
-    // Extract ALL use cases and actors from the entire project
-    extractAllProjectUseCasesAndActors(versionData, vpIdToUserId);
+    // Extract ALL use cases, actors, and requirements from the entire project
+    extractAllProjectUseCasesActorsAndRequirements(versionData, vpIdToUserId);
 
     // Extract relationships from the entire project
     extractAllProjectRelationships(versionData, vpIdToUserId);
@@ -91,6 +91,16 @@ public class UseCaseDiagramExtractor {
 
             // Create the use case need
             processUseCase(useCaseModel, versionData, associatedActors, vpIdToUserId);
+          }
+        }
+      }
+
+      // Third pass: process requirements
+      for (IDiagramElement element : diagramElements) {
+        if (isRequirementElement(element)) {
+          IModelElement requirementModel = element.getModelElement();
+          if (requirementModel != null) {
+            processRequirement(requirementModel, versionData, vpIdToUserId);
           }
         }
       }
@@ -623,8 +633,8 @@ public class UseCaseDiagramExtractor {
         .replaceAll("^_+|_+$", "");
   }
 
-  /** Extract all use cases and actors from the entire project. */
-  private static void extractAllProjectUseCasesAndActors(
+  /** Extract all use cases, actors, and requirements from the entire project. */
+  private static void extractAllProjectUseCasesActorsAndRequirements(
       NeedsFile.VersionData versionData, Map<String, String> vpIdToUserId) {
     try {
       ApplicationManager appManager = ApplicationManager.instance();
@@ -645,7 +655,7 @@ public class UseCaseDiagramExtractor {
         return;
       }
 
-      // Extract all use cases from project
+      // Extract all use cases, actors, and requirements from project
       Iterator<IModelElement> allModels = project.allLevelModelElementIterator();
       while (allModels.hasNext()) {
         IModelElement element = allModels.next();
@@ -653,6 +663,8 @@ public class UseCaseDiagramExtractor {
           processUseCase(useCase, versionData, vpIdToUserId);
         } else if (element instanceof IActor actor) {
           processActor(actor, versionData, vpIdToUserId);
+        } else if (isRequirementModel(element)) {
+          processRequirement(element, versionData, vpIdToUserId);
         }
       }
 
@@ -673,6 +685,8 @@ public class UseCaseDiagramExtractor {
                 processUseCase(useCase, versionData, vpIdToUserId);
               } else if (modelElement instanceof IActor actor) {
                 processActor(actor, versionData, vpIdToUserId);
+              } else if (isRequirementModel(modelElement)) {
+                processRequirement(modelElement, versionData, vpIdToUserId);
               }
             }
           }
@@ -772,5 +786,176 @@ public class UseCaseDiagramExtractor {
     } catch (Exception e) {
       System.err.println("Error processing use case " + useCase.getName() + ": " + e.getMessage());
     }
+  }
+
+  /**
+   * Check if a diagram element represents a requirement. Since requirements don't have a specific
+   * UI interface, we use reflection and model type checking.
+   */
+  private static boolean isRequirementElement(IDiagramElement element) {
+    if (element == null) {
+      return false;
+    }
+
+    try {
+      IModelElement modelElement = element.getModelElement();
+      if (modelElement == null) {
+        return false;
+      }
+
+      // Check if the model element is a requirement by examining its class name
+      String className = modelElement.getClass().getSimpleName();
+      return className.contains("Requirement")
+          || className.contains("IRequirement")
+          || isRequirementByFactoryType(modelElement);
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  /** Check if a model element represents a requirement. */
+  private static boolean isRequirementModel(IModelElement element) {
+    if (element == null) {
+      return false;
+    }
+
+    try {
+      // Check if the model element is a requirement by examining its class name
+      String className = element.getClass().getSimpleName();
+      return className.contains("Requirement")
+          || className.contains("IRequirement")
+          || isRequirementByFactoryType(element);
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  /** Check if model element is a requirement by checking factory type. */
+  private static boolean isRequirementByFactoryType(IModelElement element) {
+    try {
+      // Try to call requirement-specific methods to detect requirement type
+      java.lang.reflect.Method getPriorityMethod = element.getClass().getMethod("getPriority");
+      java.lang.reflect.Method getStatusMethod = element.getClass().getMethod("getStatus");
+
+      // If both methods exist and return appropriate types, likely a requirement
+      return getPriorityMethod != null && getStatusMethod != null;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  /** Process a requirement model element and convert to Need. */
+  private static void processRequirement(
+      IModelElement requirement,
+      NeedsFile.VersionData versionData,
+      Map<String, String> vpIdToUserId) {
+    try {
+      String name = requirement.getName();
+      if (name == null || name.trim().isEmpty()) {
+        name = "Untitled Requirement";
+      }
+
+      // Get User ID from requirement
+      String id = getUserId(requirement);
+
+      // Generate ID if not set
+      if (id == null || id.trim().isEmpty()) {
+        id = "REQ_" + requirement.getId().substring(Math.max(0, requirement.getId().length() - 6));
+        System.out.println("Generated User ID for requirement '" + name + "': " + id);
+      }
+
+      // Track VP internal ID to User ID mapping
+      vpIdToUserId.put(requirement.getId(), id);
+
+      // Avoid duplicates
+      String finalId = id;
+      int counter = 1;
+      while (versionData.getNeeds().containsKey(finalId)) {
+        finalId = id + "_" + counter;
+        counter++;
+      }
+
+      NeedsFile.Need need = new NeedsFile.Need(finalId, name, "req");
+      need.setContent(getDescription(requirement));
+      need.setElementType("Requirement");
+      need.setVpModelId(requirement.getId());
+
+      // Try to extract requirement-specific properties
+      try {
+        String priority = getRequirementPriority(requirement);
+        if (priority != null && !priority.trim().isEmpty()) {
+          need.setPriority(priority);
+        }
+      } catch (Exception e) {
+        // Priority not available or failed to extract
+      }
+
+      try {
+        String status = getRequirementStatus(requirement);
+        if (status != null && !status.trim().isEmpty()) {
+          need.setStatus(status);
+        } else {
+          need.setStatus("open"); // Default status
+        }
+      } catch (Exception e) {
+        need.setStatus("open"); // Default status
+      }
+
+      // Set tags
+      List<String> tags = new ArrayList<>();
+      tags.add("requirement");
+      tags.add("functional");
+      need.setTags(tags);
+
+      versionData.addNeed(need);
+      System.out.println("Processed requirement: " + finalId + " - " + name);
+    } catch (Exception e) {
+      System.err.println(
+          "Error processing requirement " + requirement.getName() + ": " + e.getMessage());
+    }
+  }
+
+  /** Extract requirement priority using reflection. */
+  private static String getRequirementPriority(IModelElement requirement) {
+    try {
+      java.lang.reflect.Method getPriorityMethod = requirement.getClass().getMethod("getPriority");
+      Object priority = getPriorityMethod.invoke(requirement);
+
+      if (priority instanceof Integer) {
+        // Convert VP priority constant to string
+        return convertVPPriorityToString((Integer) priority);
+      } else if (priority instanceof String) {
+        return (String) priority;
+      }
+    } catch (Exception e) {
+      // Method not available or failed
+    }
+    return null;
+  }
+
+  /** Extract requirement status using reflection. */
+  private static String getRequirementStatus(IModelElement requirement) {
+    try {
+      java.lang.reflect.Method getStatusMethod = requirement.getClass().getMethod("getStatus");
+      Object status = getStatusMethod.invoke(requirement);
+
+      if (status instanceof String) {
+        return (String) status;
+      }
+    } catch (Exception e) {
+      // Method not available or failed
+    }
+    return null;
+  }
+
+  /** Convert VP priority constant to string. */
+  private static String convertVPPriorityToString(int priority) {
+    return switch (priority) {
+      case 1 -> "critical";
+      case 2 -> "high";
+      case 3 -> "medium";
+      case 4 -> "low";
+      default -> "medium"; // Default
+    };
   }
 }
