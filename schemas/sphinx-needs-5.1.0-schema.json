@@ -23,17 +23,18 @@
                                          "title": {"type": "string"},
                                          "id": {"type": "string"},
                                          "content": {"type": "string"},
-                                         "type": {"type": "string"},
+                                         "type": {"type": "string", "enum": ["req", "spec", "impl", "test", "uc", "act"]},
                                          "status": {"type": "string"},
-                                         "tags": {"type": "string"},
-                                         "links": {"type": "string"},
-                                         "extends": {"type": "string"},
-                                         "includes": {"type": "string"},
-                                         "associates": {"type": "string"},
+                                         "tags": {"type": "array", "items": {"type": "string"}},
+                                         "links": {"type": "array", "items": {"type": "string"}},
+                                         "extends": {"type": "array", "items": {"type": "string"}},
+                                         "includes": {"type": "array", "items": {"type": "string"}},
+                                         "associates": {"type": "array", "items": {"type": "string"}},
                                          "priority": {"type": "string"},
                                          "element_type": {"type": "string"},
                                          "vp_model_id": {"type": "string"}
-                                     }
+                                     },
+                                     "additionalProperties": true
                                  }
                              }
                          },

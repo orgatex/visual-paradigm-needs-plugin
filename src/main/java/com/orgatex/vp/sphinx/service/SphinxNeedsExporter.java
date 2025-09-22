@@ -134,12 +134,30 @@ public class SphinxNeedsExporter {
 
   /** Merge content from multiple diagrams into a single NeedsFile. */
   private void mergeDiagramContent(NeedsFile target, NeedsFile source) {
+    // Initialize target if it's empty
+    if (target.getCurrentVersion() == null) {
+      target.setCurrentVersion(source.getCurrentVersion());
+    }
+    if (target.getProject() == null) {
+      target.setProject(source.getProject());
+    }
+    if (target.getCreated() == null) {
+      target.setCreated(source.getCreated());
+    }
+
     String targetVersion = target.getCurrentVersion();
     String sourceVersion = source.getCurrentVersion();
 
     NeedsFile.VersionData targetVersionData = target.getVersions().get(targetVersion);
     NeedsFile.VersionData sourceVersionData = source.getVersions().get(sourceVersion);
 
+    // If target doesn't have the version, copy it entirely from source
+    if (targetVersionData == null && sourceVersionData != null) {
+      target.addVersion(targetVersion, sourceVersionData);
+      return;
+    }
+
+    // If both have the version, merge the needs
     if (targetVersionData != null && sourceVersionData != null) {
       Map<String, NeedsFile.Need> targetNeeds = targetVersionData.getNeeds();
       Map<String, NeedsFile.Need> sourceNeeds = sourceVersionData.getNeeds();
@@ -154,11 +172,6 @@ public class SphinxNeedsExporter {
 
       // Update the needs amount
       targetVersionData.setNeedsAmount(targetNeeds.size());
-    }
-
-    // Merge version information
-    if (target.getCurrentVersion() == null || target.getCurrentVersion().isEmpty()) {
-      target.setCurrentVersion(source.getCurrentVersion());
     }
   }
 

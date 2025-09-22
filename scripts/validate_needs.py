@@ -101,6 +101,9 @@ class NeedsValidator:
                     f"Version '{version}': needs_amount ({declared_count}) "
                     f"doesn't match actual count ({actual_count})")
 
+            # Validate link integrity
+            self._validate_link_integrity(version, version_data['needs'])
+
             # Validate individual needs
             for need_id, need_data in version_data['needs'].items():
                 self._validate_need_rules(need_id, need_data)
@@ -119,21 +122,19 @@ class NeedsValidator:
         if 'id' in need_data:
             self._validate_id_format(need_data['id'])
 
-        # Validate type
-        if 'type' in need_data:
-            self._validate_type(need_data['type'])
 
-        # Validate status
-        if 'status' in need_data:
-            self._validate_status(need_data['status'])
+    def _validate_link_integrity(self, version: str, needs: Dict[str, Any]) -> None:
+        """Validate that all links point to existing needs."""
+        valid_ids = set(needs.keys())
 
-        # Validate links format
-        if 'links' in need_data and need_data['links']:
-            self._validate_links(need_id, need_data['links'])
-
-        # Validate tags format
-        if 'tags' in need_data and need_data['tags']:
-            self._validate_tags(need_id, need_data['tags'])
+        for need_id, need_data in needs.items():
+            # Check all relationship types
+            for relationship_type in ['includes', 'extends', 'associates', 'links']:
+                targets = need_data.get(relationship_type, [])
+                for target_id in targets:
+                    if target_id not in valid_ids:
+                        self.errors.append(
+                            f"Need '{need_id}' {relationship_type} non-existent need '{target_id}'")
 
     def _validate_id_format(self, need_id: str) -> None:
         """Validate need ID format."""
@@ -141,49 +142,6 @@ class NeedsValidator:
             self.warnings.append(
                 f"Need ID '{need_id}' should contain only uppercase letters, "
                 'numbers, and underscores')
-
-    def _validate_type(self, need_type: str) -> None:
-        """Validate need type."""
-        common_types = ['req', 'spec', 'impl', 'test', 'actor', 'usecase']
-        if need_type not in common_types:
-            self.warnings.append(f"Uncommon need type '{need_type}'. "
-                                 f"Common types: {', '.join(common_types)}")
-
-    def _validate_status(self, status: str) -> None:
-        """Validate need status."""
-        common_statuses = ['open', 'closed', 'in_progress', 'done']
-        if status not in common_statuses:
-            self.warnings.append(
-                f"Uncommon status '{status}'. "
-                f"Common statuses: {', '.join(common_statuses)}")
-
-    def _validate_links(self, need_id: str, links: str) -> None:
-        """Validate links format."""
-        if not isinstance(links, str):
-            self.errors.append(f"Need '{need_id}' links must be a string")
-            return
-
-        # Links should be comma-separated IDs
-        link_ids = [link.strip() for link in links.split(',') if link.strip()]
-        for link_id in link_ids:
-            if not re.match(r'^[A-Z0-9_]+$', link_id):
-                self.warnings.append(
-                    f"Need '{need_id}' has invalid link ID format: '{link_id}'"
-                )
-
-    def _validate_tags(self, need_id: str, tags: str) -> None:
-        """Validate tags format."""
-        if not isinstance(tags, str):
-            self.errors.append(f"Need '{need_id}' tags must be a string")
-            return
-
-        # Tags should be comma-separated
-        tag_list = [tag.strip() for tag in tags.split(',') if tag.strip()]
-        for tag in tag_list:
-            if not re.match(r'^[a-zA-Z0-9_-]+$', tag):
-                self.warnings.append(
-                    f"Need '{need_id}' has tag with special characters: '{tag}'"
-                )
 
     def print_results(self) -> None:
         """Print validation results."""

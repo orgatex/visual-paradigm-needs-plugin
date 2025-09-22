@@ -219,7 +219,7 @@ public class UseCaseDiagramExtractor {
       counter++;
     }
 
-    NeedsFile.Need need = new NeedsFile.Need(finalId, name, "actor");
+    NeedsFile.Need need = new NeedsFile.Need(finalId, name, "act");
     need.setContent(getDescription(actor));
     need.setStatus("identify"); // Actors typically start in identify phase
     need.setElementType("Actor");
@@ -227,7 +227,7 @@ public class UseCaseDiagramExtractor {
 
     // Set tags for actors
     List<String> tags = new ArrayList<>();
-    tags.add("actor");
+    tags.add("act");
     tags.add("stakeholder");
     need.setTags(tags);
 
