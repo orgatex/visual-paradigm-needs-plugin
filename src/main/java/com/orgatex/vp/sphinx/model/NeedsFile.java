@@ -98,6 +98,16 @@ public class NeedsFile {
     @JsonProperty("associates")
     private List<String> associatesLinks = new ArrayList<>();
 
+    // Custom link types for requirement relationships
+    @JsonProperty("derive")
+    private List<String> deriveLinks = new ArrayList<>();
+
+    @JsonProperty("contains")
+    private List<String> containsLinks = new ArrayList<>();
+
+    @JsonProperty("refines")
+    private List<String> refinesLinks = new ArrayList<>();
+
     @JsonProperty("priority")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String priority;
