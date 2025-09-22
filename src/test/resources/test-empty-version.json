@@ -1,0 +1,44 @@
+{
+  "created": "2025-09-22T06:54:00",
+  "current_version": "",
+  "project": "Test Empty Version",
+  "versions": {
+    "": {
+      "created": "2025-09-22T06:54:00",
+      "creator": {
+        "name": "sphinx_needs",
+        "program": "sphinx_needs",
+        "version": "5.1.0"
+      },
+      "needs": {
+        "UC001": {
+          "id": "UC001",
+          "title": "Test Use Case",
+          "content": "This is a test use case",
+          "type": "uc",
+          "status": "open",
+          "element_type": "UseCase",
+          "tags": ["test"],
+          "links": [],
+          "extends": [],
+          "includes": [],
+          "associates": []
+        },
+        "AC001": {
+          "id": "AC001",
+          "title": "Test Actor",
+          "content": "This is a test actor",
+          "type": "actor",
+          "status": "open",
+          "element_type": "Actor",
+          "tags": ["test"],
+          "links": [],
+          "extends": [],
+          "includes": [],
+          "associates": ["UC001"]
+        }
+      },
+      "needs_amount": 2
+    }
+  }
+}

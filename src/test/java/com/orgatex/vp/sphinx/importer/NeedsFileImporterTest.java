@@ -77,6 +77,39 @@ public class NeedsFileImporterTest {
         });
   }
 
+  @Test
+  void testEmptyVersionStringHandling() throws Exception {
+    NeedsFile needsFile = new NeedsFile();
+    needsFile.setProject("Test Project");
+    needsFile.setCurrentVersion(""); // Empty string, like Sphinx generates
+
+    // Create version data with empty string key
+    NeedsFile.VersionData versionData = new NeedsFile.VersionData();
+    versionData.setCreated("2024-01-01T12:00:00");
+    versionData.setCreator(new NeedsFile.Creator());
+
+    // Create a sample need
+    NeedsFile.Need need = new NeedsFile.Need();
+    need.setId("UC001");
+    need.setTitle("Test Use Case");
+    need.setType("uc");
+    need.setElementType("UseCase");
+    need.setStatus("open");
+    versionData.addNeed(need);
+
+    // Add version data with empty string key
+    needsFile.addVersion("", versionData);
+
+    // Test that we can find version data with empty string key
+    String currentVersion = needsFile.getCurrentVersion();
+    NeedsFile.VersionData foundVersionData = needsFile.getVersions().get(currentVersion);
+
+    assertNotNull(foundVersionData);
+    assertEquals("", currentVersion);
+    assertFalse(foundVersionData.getNeeds().isEmpty());
+    assertEquals("UC001", foundVersionData.getNeeds().get("UC001").getId());
+  }
+
   private NeedsFile createSampleNeedsFile() {
     NeedsFile needsFile = new NeedsFile();
     needsFile.setProject("Test Project");
