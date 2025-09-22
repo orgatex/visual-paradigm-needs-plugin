@@ -146,6 +146,8 @@ public class UseCaseDiagramBuilder {
       useCaseModel = modelFactory.createUseCase();
       useCaseModel.setName(need.getTitle());
       useCaseModel.setUserID(need.getId());
+      // Set description from content field
+      setElementDescription(useCaseModel, need.getContent());
       // Set status if available and valid
       setUseCaseStatus(useCaseModel, need.getStatus());
       // Set priority if available and valid
@@ -213,6 +215,8 @@ public class UseCaseDiagramBuilder {
       actorModel = modelFactory.createActor();
       actorModel.setName(need.getTitle());
       actorModel.setUserID(need.getId());
+      // Set description from content field
+      setElementDescription(actorModel, need.getContent());
       System.out.println("DEBUG: Created new actor with VP ID: " + actorModel.getId());
       System.out.println("Created new actor model: " + need.getId() + " - " + need.getTitle());
     }
@@ -492,6 +496,17 @@ public class UseCaseDiagramBuilder {
         return 6; // STATUS_COMPLETE
       default:
         return -1; // Unknown status
+    }
+  }
+
+  /** Set element description using reflection. */
+  private void setElementDescription(Object element, String description) {
+    try {
+      java.lang.reflect.Method setDescriptionMethod =
+          element.getClass().getMethod("setDescription", String.class);
+      setDescriptionMethod.invoke(element, description != null ? description : "");
+    } catch (Exception e) {
+      System.err.println("Error setting element description: " + e.getMessage());
     }
   }
 }
