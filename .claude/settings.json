@@ -2,6 +2,7 @@
     "permissions": {
         "allow": [
             "Bash(./run build)",
+            "Bash(./run format)",
             "Bash(./run lint)",
             "Bash(./run test)",
             "Bash(java:*)",
@@ -13,16 +14,16 @@
             "Bash(python3 scripts/validate_needs.py:*)",
             "WebFetch(domain:knowhow.visual-paradigm.com)",
             "WebFetch(domain:sphinx-needs.readthedocs.io)",
+            "WebFetch(domain:www.visual-paradigm.com)",
             "mcp__filesystem__create_directory",
+            "mcp__filesystem__directory_tree",
             "mcp__filesystem__edit_file",
+            "mcp__filesystem__get_file_info",
+            "mcp__filesystem__list_directory",
             "mcp__filesystem__read_file",
             "mcp__filesystem__search_files",
             "mcp__filesystem__write_file",
             "mcp__sequential-thinking__sequentialthinking",
-            "mcp__filesystem__directory_tree",
-            "mcp__filesystem__list_directory",
-            "mcp__filesystem__get_file_info",
-            "WebFetch(domain:www.visual-paradigm.com)"
         ],
         "deny": [
             "WebSearch",
