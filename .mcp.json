@@ -10,6 +10,16 @@
         "~/.config/VisualParadigm"
       ],
       "env": {}
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "."
+      ],
+      "env": {}
     }
   }
 }
