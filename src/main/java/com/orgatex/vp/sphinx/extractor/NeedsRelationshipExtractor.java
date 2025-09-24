@@ -44,6 +44,9 @@ public class NeedsRelationshipExtractor {
       Map<String, Set<String>> allIncludeRelationships = new HashMap<>();
       Map<String, Set<String>> allExtendRelationships = new HashMap<>();
       Map<String, Set<String>> allAssociateRelationships = new HashMap<>();
+      Map<String, Set<String>> allContainsRelationships = new HashMap<>();
+      Map<String, Set<String>> allDeriveRelationships = new HashMap<>();
+      Map<String, Set<String>> allRefinesRelationships = new HashMap<>();
 
       // Search through all diagrams for relationships
       Iterator<IDiagramUIModel> diagrams = project.diagramIterator();
@@ -52,12 +55,23 @@ public class NeedsRelationshipExtractor {
 
         // Extract relationships from this diagram and add to global maps
         extractRelationshipsFromDiagram(
-            diagram, allIncludeRelationships, allExtendRelationships, allAssociateRelationships);
+            diagram,
+            allIncludeRelationships,
+            allExtendRelationships,
+            allAssociateRelationships,
+            allContainsRelationships,
+            allDeriveRelationships,
+            allRefinesRelationships);
       }
 
       System.out.println("Extracted relationships from all diagrams in project");
       return new RelationshipMaps(
-          allIncludeRelationships, allExtendRelationships, allAssociateRelationships);
+          allIncludeRelationships,
+          allExtendRelationships,
+          allAssociateRelationships,
+          allContainsRelationships,
+          allDeriveRelationships,
+          allRefinesRelationships);
 
     } catch (Exception e) {
       System.err.println("Error extracting project relationships: " + e.getMessage());
@@ -71,7 +85,10 @@ public class NeedsRelationshipExtractor {
       IDiagramUIModel diagram,
       Map<String, Set<String>> allIncludeRelationships,
       Map<String, Set<String>> allExtendRelationships,
-      Map<String, Set<String>> allAssociateRelationships) {
+      Map<String, Set<String>> allAssociateRelationships,
+      Map<String, Set<String>> allContainsRelationships,
+      Map<String, Set<String>> allDeriveRelationships,
+      Map<String, Set<String>> allRefinesRelationships) {
     try {
       // Get all diagram elements to find connectors
       IDiagramElement[] diagramElements = diagram.toDiagramElementArray();
@@ -83,6 +100,10 @@ public class NeedsRelationshipExtractor {
           processExtendRelationship(extendUI, allExtendRelationships);
         } else if (element instanceof IAssociationUIModel associateUI) {
           processAssociateRelationship(associateUI, allAssociateRelationships);
+        } else {
+          // Check for requirements diagram relationships using reflection
+          processRequirementRelationship(
+              element, allContainsRelationships, allDeriveRelationships, allRefinesRelationships);
         }
       }
     } catch (Exception e) {
@@ -205,25 +226,144 @@ public class NeedsRelationshipExtractor {
     return null;
   }
 
+  /** Process requirement relationships (contains, derive, refines) using reflection. */
+  private static void processRequirementRelationship(
+      IDiagramElement element,
+      Map<String, Set<String>> containsRelationships,
+      Map<String, Set<String>> deriveRelationships,
+      Map<String, Set<String>> refinesRelationships) {
+    try {
+      // Check if this is a requirement relationship connector
+      String className = element.getClass().getSimpleName();
+
+      if (className.contains("Contain") || className.contains("contain")) {
+        processGenericRelationship(element, containsRelationships);
+      } else if (className.contains("Derive") || className.contains("derive")) {
+        processGenericRelationship(element, deriveRelationships);
+      } else if (className.contains("Refine") || className.contains("refine")) {
+        processGenericRelationship(element, refinesRelationships);
+      }
+    } catch (Exception e) {
+      // Not a recognized requirement relationship, ignore
+    }
+  }
+
+  /** Process generic requirement relationship. */
+  private static void processGenericRelationship(
+      IDiagramElement element, Map<String, Set<String>> relationshipMap) {
+    try {
+      String fromId = getGenericFromElementId(element);
+      String toId = getGenericToElementId(element);
+
+      if (fromId != null && toId != null) {
+        relationshipMap.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
+      }
+    } catch (Exception e) {
+      // Could not process relationship
+    }
+  }
+
+  /** Get from element ID using generic reflection. */
+  private static String getGenericFromElementId(IDiagramElement element) {
+    try {
+      // Try common method names for getting source element
+      String[] methodNames = {"getFrom", "getFromShape", "getSource", "getSourceShape"};
+
+      for (String methodName : methodNames) {
+        try {
+          java.lang.reflect.Method method = element.getClass().getMethod(methodName);
+          Object fromElement = method.invoke(element);
+          String id = extractElementIdFromShape(fromElement);
+          if (id != null) {
+            return id;
+          }
+        } catch (Exception e) {
+          // Try next method
+        }
+      }
+    } catch (Exception e) {
+      // Could not get from element
+    }
+    return null;
+  }
+
+  /** Get to element ID using generic reflection. */
+  private static String getGenericToElementId(IDiagramElement element) {
+    try {
+      // Try common method names for getting target element
+      String[] methodNames = {"getTo", "getToShape", "getTarget", "getTargetShape"};
+
+      for (String methodName : methodNames) {
+        try {
+          java.lang.reflect.Method method = element.getClass().getMethod(methodName);
+          Object toElement = method.invoke(element);
+          String id = extractElementIdFromShape(toElement);
+          if (id != null) {
+            return id;
+          }
+        } catch (Exception e) {
+          // Try next method
+        }
+      }
+    } catch (Exception e) {
+      // Could not get to element
+    }
+    return null;
+  }
+
+  /** Extract element ID from any diagram shape using reflection. */
+  private static String extractElementIdFromShape(Object shape) {
+    if (shape == null) {
+      return null;
+    }
+
+    try {
+      // Try getModelElement method
+      java.lang.reflect.Method getModelElementMethod =
+          shape.getClass().getMethod("getModelElement");
+      Object modelElement = getModelElementMethod.invoke(shape);
+
+      if (modelElement instanceof IModelElement) {
+        return ((IModelElement) modelElement).getId();
+      }
+    } catch (Exception e) {
+      // Method not available or failed
+    }
+
+    return null;
+  }
+
   /** Container for relationship maps extracted from diagrams. */
   public static class RelationshipMaps {
     private final Map<String, Set<String>> includeRelationships;
     private final Map<String, Set<String>> extendRelationships;
     private final Map<String, Set<String>> associateRelationships;
+    private final Map<String, Set<String>> containsRelationships;
+    private final Map<String, Set<String>> deriveRelationships;
+    private final Map<String, Set<String>> refinesRelationships;
 
     public RelationshipMaps() {
       this.includeRelationships = new HashMap<>();
       this.extendRelationships = new HashMap<>();
       this.associateRelationships = new HashMap<>();
+      this.containsRelationships = new HashMap<>();
+      this.deriveRelationships = new HashMap<>();
+      this.refinesRelationships = new HashMap<>();
     }
 
     public RelationshipMaps(
         Map<String, Set<String>> includeRelationships,
         Map<String, Set<String>> extendRelationships,
-        Map<String, Set<String>> associateRelationships) {
+        Map<String, Set<String>> associateRelationships,
+        Map<String, Set<String>> containsRelationships,
+        Map<String, Set<String>> deriveRelationships,
+        Map<String, Set<String>> refinesRelationships) {
       this.includeRelationships = includeRelationships;
       this.extendRelationships = extendRelationships;
       this.associateRelationships = associateRelationships;
+      this.containsRelationships = containsRelationships;
+      this.deriveRelationships = deriveRelationships;
+      this.refinesRelationships = refinesRelationships;
     }
 
     public Map<String, Set<String>> getIncludeRelationships() {
@@ -236,6 +376,18 @@ public class NeedsRelationshipExtractor {
 
     public Map<String, Set<String>> getAssociateRelationships() {
       return associateRelationships;
+    }
+
+    public Map<String, Set<String>> getContainsRelationships() {
+      return containsRelationships;
+    }
+
+    public Map<String, Set<String>> getDeriveRelationships() {
+      return deriveRelationships;
+    }
+
+    public Map<String, Set<String>> getRefinesRelationships() {
+      return refinesRelationships;
     }
   }
 }

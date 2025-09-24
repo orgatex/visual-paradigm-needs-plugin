@@ -97,7 +97,14 @@ public class NeedsModelExtractor {
       need.setStatus(VpModelProcessor.getStatus(useCase));
       need.setElementType("UseCase");
       need.setPriority(VpModelProcessor.getRank(useCase));
-      need.setVpModelId(useCase.getId()); // Store Visual Paradigm model ID
+
+      // Ensure vp_model_id is never null
+      String vpModelId = useCase.getId();
+      if (vpModelId == null || vpModelId.trim().isEmpty()) {
+        vpModelId = "uc_" + System.nanoTime(); // Generate fallback ID
+        System.out.println("Warning: Generated fallback VP model ID for use case: " + vpModelId);
+      }
+      need.setVpModelId(vpModelId);
 
       // Set tags
       List<String> tags = new ArrayList<>();
@@ -137,7 +144,14 @@ public class NeedsModelExtractor {
       need.setContent(VpModelProcessor.getDescription(actor));
       need.setStatus("identify"); // Actors typically start in identify phase
       need.setElementType("Actor");
-      need.setVpModelId(actor.getId()); // Store Visual Paradigm model ID
+
+      // Ensure vp_model_id is never null
+      String vpModelId = actor.getId();
+      if (vpModelId == null || vpModelId.trim().isEmpty()) {
+        vpModelId = "ac_" + System.nanoTime(); // Generate fallback ID
+        System.out.println("Warning: Generated fallback VP model ID for actor: " + vpModelId);
+      }
+      need.setVpModelId(vpModelId);
 
       // Set tags for actors
       List<String> tags = new ArrayList<>();
@@ -178,7 +192,14 @@ public class NeedsModelExtractor {
       NeedsFile.Need need = new NeedsFile.Need(id, name, "req");
       need.setContent(VpModelProcessor.getDescription(requirement));
       need.setElementType("Requirement");
-      need.setVpModelId(requirement.getId());
+
+      // Ensure vp_model_id is never null
+      String vpModelId = requirement.getId();
+      if (vpModelId == null || vpModelId.trim().isEmpty()) {
+        vpModelId = "req_" + System.nanoTime(); // Generate fallback ID
+        System.out.println("Warning: Generated fallback VP model ID for requirement: " + vpModelId);
+      }
+      need.setVpModelId(vpModelId);
 
       // Try to extract requirement-specific properties
       try {

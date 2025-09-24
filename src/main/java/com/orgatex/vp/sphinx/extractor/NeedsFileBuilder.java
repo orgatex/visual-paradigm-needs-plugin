@@ -75,26 +75,12 @@ public class NeedsFileBuilder {
 
     // Add all extracted needs to the version
     for (NeedsFile.Need need : needs) {
-      // Handle duplicate IDs by appending counter
-      String finalId = need.getId();
-      int counter = 1;
-      while (versionData.getNeeds().containsKey(finalId)) {
-        finalId = need.getId() + "_" + counter;
-        counter++;
+      // Skip needs that already exist (by ID) to avoid duplicates
+      if (!versionData.getNeeds().containsKey(need.getId())) {
+        versionData.addNeed(need);
+      } else {
+        System.out.println("Warning: Skipping duplicate need with ID: " + need.getId());
       }
-
-      if (!finalId.equals(need.getId())) {
-        // Update the need's ID if we had to change it
-        need = new NeedsFile.Need(finalId, need.getTitle(), need.getType());
-        need.setContent(need.getContent());
-        need.setStatus(need.getStatus());
-        need.setTags(need.getTags());
-        need.setPriority(need.getPriority());
-        need.setElementType(need.getElementType());
-        need.setVpModelId(need.getVpModelId());
-      }
-
-      versionData.addNeed(need);
     }
 
     // Apply relationships to the needs
@@ -164,6 +150,63 @@ public class NeedsFileBuilder {
         }
 
         fromNeed.setAssociatesLinks(new ArrayList<>(associateLinks));
+      }
+    }
+
+    // Contains relationships: populate "contains" field
+    for (Map.Entry<String, Set<String>> entry :
+        relationshipMaps.getContainsRelationships().entrySet()) {
+      String fromUserId = vpIdToUserId.get(entry.getKey());
+      if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
+        NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
+        Set<String> containsLinks = new HashSet<>();
+
+        for (String toVpId : entry.getValue()) {
+          String toUserId = vpIdToUserId.get(toVpId);
+          if (toUserId != null && versionData.getNeeds().containsKey(toUserId)) {
+            containsLinks.add(toUserId);
+          }
+        }
+
+        fromNeed.setContainsLinks(new ArrayList<>(containsLinks));
+      }
+    }
+
+    // Derive relationships: populate "derive" field
+    for (Map.Entry<String, Set<String>> entry :
+        relationshipMaps.getDeriveRelationships().entrySet()) {
+      String fromUserId = vpIdToUserId.get(entry.getKey());
+      if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
+        NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
+        Set<String> deriveLinks = new HashSet<>();
+
+        for (String toVpId : entry.getValue()) {
+          String toUserId = vpIdToUserId.get(toVpId);
+          if (toUserId != null && versionData.getNeeds().containsKey(toUserId)) {
+            deriveLinks.add(toUserId);
+          }
+        }
+
+        fromNeed.setDeriveLinks(new ArrayList<>(deriveLinks));
+      }
+    }
+
+    // Refines relationships: populate "refines" field
+    for (Map.Entry<String, Set<String>> entry :
+        relationshipMaps.getRefinesRelationships().entrySet()) {
+      String fromUserId = vpIdToUserId.get(entry.getKey());
+      if (fromUserId != null && versionData.getNeeds().containsKey(fromUserId)) {
+        NeedsFile.Need fromNeed = versionData.getNeeds().get(fromUserId);
+        Set<String> refinesLinks = new HashSet<>();
+
+        for (String toVpId : entry.getValue()) {
+          String toUserId = vpIdToUserId.get(toVpId);
+          if (toUserId != null && versionData.getNeeds().containsKey(toUserId)) {
+            refinesLinks.add(toUserId);
+          }
+        }
+
+        fromNeed.setRefinesLinks(new ArrayList<>(refinesLinks));
       }
     }
   }
