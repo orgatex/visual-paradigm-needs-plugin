@@ -119,6 +119,7 @@ public class NeedsFile {
     private List<String> refinesLinks = new ArrayList<>();
 
     @JsonProperty("priority")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private String priority;
 
     // Additional VP-specific fields

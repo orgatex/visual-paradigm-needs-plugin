@@ -96,7 +96,10 @@ public class NeedsModelExtractor {
       need.setContent(VpModelProcessor.getDescription(useCase));
       need.setStatus(VpModelProcessor.getStatus(useCase));
       need.setElementType("UseCase");
-      need.setPriority(VpModelProcessor.getRank(useCase));
+      String priority = VpModelProcessor.getRank(useCase);
+      if (priority != null && !priority.trim().isEmpty()) {
+        need.setPriority(priority);
+      }
 
       // Ensure vp_model_id is never null
       String vpModelId = useCase.getId();
