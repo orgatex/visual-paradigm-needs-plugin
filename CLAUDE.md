@@ -7,6 +7,7 @@
 - Always run `./run format` to keep the code formatted
 - Run pre-commit on new or changed files
 - Fix especially pre-existing issues
+- When fixing a bug, consider a test to catch regressions
 - Do not suppress warnings
 - If you change the README, first read it carefully. Only do sensible changes.
 - Do not restructure the README. You may make little improvements, though.
