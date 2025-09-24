@@ -1,3 +1,4 @@
+- Break Stuff: Remove old implementations completely, no backward compatibility
 - Keep it simple stupid! Write straight forward, don't be smart.
 - No fallbacks, no big manipulations
 - Before starting a Task, read the PROJECT_STATUS.local.md file
@@ -11,7 +12,6 @@
 - Do not restructure the README. You may make little improvements, though.
 - Test your implementation with unit or integration tests
 - Don't build brittle tests with too many mocks
-- Remove old implementations completely - no backward compatibility needed
 - Check API documentation for exact method names - don't assume naming patterns
 - Local Plugin API Javadoc: `./doc`
 - No useless inline comments, i.e. which are just describing what the
