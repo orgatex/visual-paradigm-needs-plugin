@@ -58,6 +58,7 @@ public class NeedsFile {
     private String name = "Visual Paradigm Sphinx-Needs Plugin";
 
     @JsonProperty("program")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String program;
 
     @JsonProperty("version")
@@ -80,36 +81,44 @@ public class NeedsFile {
     private String type;
 
     @JsonProperty("status")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private String status;
 
     @JsonProperty("tags")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> tags = new ArrayList<>();
 
     @JsonProperty("links")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> links = new ArrayList<>();
 
     // Custom link types for use case relationships
     @JsonProperty("extends")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> extendsLinks = new ArrayList<>();
 
     @JsonProperty("includes")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> includesLinks = new ArrayList<>();
 
     @JsonProperty("associates")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> associatesLinks = new ArrayList<>();
 
     // Custom link types for requirement relationships
     @JsonProperty("derive")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> deriveLinks = new ArrayList<>();
 
     @JsonProperty("contains")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> containsLinks = new ArrayList<>();
 
     @JsonProperty("refines")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<String> refinesLinks = new ArrayList<>();
 
     @JsonProperty("priority")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String priority;
 
     // Additional VP-specific fields
