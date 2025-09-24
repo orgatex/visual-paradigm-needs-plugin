@@ -7,7 +7,11 @@ import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.connector.IAssociationUIModel;
 import com.vp.plugin.diagram.connector.IExtendUIModel;
 import com.vp.plugin.diagram.connector.IIncludeUIModel;
+import com.vp.plugin.diagram.connector.IRQRefineUIModel;
+import com.vp.plugin.diagram.connector.IRQTraceUIModel;
+import com.vp.plugin.diagram.connector.IRequirementDeriveUIModel;
 import com.vp.plugin.diagram.shape.IActorUIModel;
+import com.vp.plugin.diagram.shape.IRequirementUIModel;
 import com.vp.plugin.diagram.shape.IUseCaseUIModel;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.IProject;
@@ -49,9 +53,12 @@ public class NeedsRelationshipExtractor {
       Map<String, Set<String>> allRefinesRelationships = new HashMap<>();
 
       // Search through all diagrams for relationships
+      @SuppressWarnings("unchecked")
       Iterator<IDiagramUIModel> diagrams = project.diagramIterator();
+      int diagramCount = 0;
       while (diagrams.hasNext()) {
         IDiagramUIModel diagram = diagrams.next();
+        diagramCount++;
 
         // Extract relationships from this diagram and add to global maps
         extractRelationshipsFromDiagram(
@@ -63,6 +70,15 @@ public class NeedsRelationshipExtractor {
             allDeriveRelationships,
             allRefinesRelationships);
       }
+
+      // Print summary of extracted relationships
+      System.out.println("Relationship extraction summary:");
+      System.out.println("  Include: " + allIncludeRelationships.size());
+      System.out.println("  Extend: " + allExtendRelationships.size());
+      System.out.println("  Associate: " + allAssociateRelationships.size());
+      System.out.println("  Contains: " + allContainsRelationships.size());
+      System.out.println("  Derive: " + allDeriveRelationships.size());
+      System.out.println("  Refines: " + allRefinesRelationships.size());
 
       System.out.println("Extracted relationships from all diagrams in project");
       return new RelationshipMaps(
@@ -100,10 +116,12 @@ public class NeedsRelationshipExtractor {
           processExtendRelationship(extendUI, allExtendRelationships);
         } else if (element instanceof IAssociationUIModel associateUI) {
           processAssociateRelationship(associateUI, allAssociateRelationships);
-        } else {
-          // Check for requirements diagram relationships using reflection
-          processRequirementRelationship(
-              element, allContainsRelationships, allDeriveRelationships, allRefinesRelationships);
+        } else if (element instanceof IRequirementDeriveUIModel deriveUI) {
+          processRequirementDeriveRelationship(deriveUI, allDeriveRelationships);
+        } else if (element instanceof IRQRefineUIModel refineUI) {
+          processRequirementRefineRelationship(refineUI, allRefinesRelationships);
+        } else if (element instanceof IRQTraceUIModel traceUI) {
+          processRequirementTraceRelationship(traceUI, allContainsRelationships);
         }
       }
     } catch (Exception e) {
@@ -175,6 +193,9 @@ public class NeedsRelationshipExtractor {
       } else if (fromElement instanceof IActorUIModel actorUI) {
         IModelElement model = actorUI.getModelElement();
         return model != null ? model.getId() : null;
+      } else if (fromElement instanceof IRequirementUIModel requirementUI) {
+        IModelElement model = requirementUI.getModelElement();
+        return model != null ? model.getId() : null;
       }
     } catch (Exception e) {
       try {
@@ -201,6 +222,9 @@ public class NeedsRelationshipExtractor {
       } else if (toElement instanceof IActorUIModel actorUI) {
         IModelElement model = actorUI.getModelElement();
         return model != null ? model.getId() : null;
+      } else if (toElement instanceof IRequirementUIModel requirementUI) {
+        IModelElement model = requirementUI.getModelElement();
+        return model != null ? model.getId() : null;
       }
     } catch (Exception e) {
       try {
@@ -222,115 +246,56 @@ public class NeedsRelationshipExtractor {
     } else if (shape instanceof IActorUIModel actorUI) {
       IModelElement model = actorUI.getModelElement();
       return model != null ? model.getId() : null;
+    } else if (shape instanceof IRequirementUIModel requirementUI) {
+      IModelElement model = requirementUI.getModelElement();
+      return model != null ? model.getId() : null;
     }
     return null;
   }
 
-  /** Process requirement relationships (contains, derive, refines) using reflection. */
-  private static void processRequirementRelationship(
-      IDiagramElement element,
-      Map<String, Set<String>> containsRelationships,
-      Map<String, Set<String>> deriveRelationships,
-      Map<String, Set<String>> refinesRelationships) {
+  /** Process requirement derive relationship and add to global map. */
+  private static void processRequirementDeriveRelationship(
+      IRequirementDeriveUIModel deriveUI, Map<String, Set<String>> deriveRelationships) {
     try {
-      // Check if this is a requirement relationship connector
-      String className = element.getClass().getSimpleName();
-
-      if (className.contains("Contain") || className.contains("contain")) {
-        processGenericRelationship(element, containsRelationships);
-      } else if (className.contains("Derive") || className.contains("derive")) {
-        processGenericRelationship(element, deriveRelationships);
-      } else if (className.contains("Refine") || className.contains("refine")) {
-        processGenericRelationship(element, refinesRelationships);
-      }
-    } catch (Exception e) {
-      // Not a recognized requirement relationship, ignore
-    }
-  }
-
-  /** Process generic requirement relationship. */
-  private static void processGenericRelationship(
-      IDiagramElement element, Map<String, Set<String>> relationshipMap) {
-    try {
-      String fromId = getGenericFromElementId(element);
-      String toId = getGenericToElementId(element);
+      String fromId = getFromElementId(deriveUI);
+      String toId = getToElementId(deriveUI);
 
       if (fromId != null && toId != null) {
-        relationshipMap.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
+        deriveRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
       }
     } catch (Exception e) {
-      // Could not process relationship
+      System.err.println("Error processing derive relationship: " + e.getMessage());
     }
   }
 
-  /** Get from element ID using generic reflection. */
-  private static String getGenericFromElementId(IDiagramElement element) {
+  /** Process requirement refine relationship and add to global map. */
+  private static void processRequirementRefineRelationship(
+      IRQRefineUIModel refineUI, Map<String, Set<String>> refinesRelationships) {
     try {
-      // Try common method names for getting source element
-      String[] methodNames = {"getFrom", "getFromShape", "getSource", "getSourceShape"};
+      String fromId = getFromElementId(refineUI);
+      String toId = getToElementId(refineUI);
 
-      for (String methodName : methodNames) {
-        try {
-          java.lang.reflect.Method method = element.getClass().getMethod(methodName);
-          Object fromElement = method.invoke(element);
-          String id = extractElementIdFromShape(fromElement);
-          if (id != null) {
-            return id;
-          }
-        } catch (Exception e) {
-          // Try next method
-        }
+      if (fromId != null && toId != null) {
+        refinesRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
       }
     } catch (Exception e) {
-      // Could not get from element
+      System.err.println("Error processing refine relationship: " + e.getMessage());
     }
-    return null;
   }
 
-  /** Get to element ID using generic reflection. */
-  private static String getGenericToElementId(IDiagramElement element) {
+  /** Process requirement trace relationship and add to global map (mapping to contains). */
+  private static void processRequirementTraceRelationship(
+      IRQTraceUIModel traceUI, Map<String, Set<String>> containsRelationships) {
     try {
-      // Try common method names for getting target element
-      String[] methodNames = {"getTo", "getToShape", "getTarget", "getTargetShape"};
+      String fromId = getFromElementId(traceUI);
+      String toId = getToElementId(traceUI);
 
-      for (String methodName : methodNames) {
-        try {
-          java.lang.reflect.Method method = element.getClass().getMethod(methodName);
-          Object toElement = method.invoke(element);
-          String id = extractElementIdFromShape(toElement);
-          if (id != null) {
-            return id;
-          }
-        } catch (Exception e) {
-          // Try next method
-        }
+      if (fromId != null && toId != null) {
+        containsRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
       }
     } catch (Exception e) {
-      // Could not get to element
+      System.err.println("Error processing trace relationship: " + e.getMessage());
     }
-    return null;
-  }
-
-  /** Extract element ID from any diagram shape using reflection. */
-  private static String extractElementIdFromShape(Object shape) {
-    if (shape == null) {
-      return null;
-    }
-
-    try {
-      // Try getModelElement method
-      java.lang.reflect.Method getModelElementMethod =
-          shape.getClass().getMethod("getModelElement");
-      Object modelElement = getModelElementMethod.invoke(shape);
-
-      if (modelElement instanceof IModelElement) {
-        return ((IModelElement) modelElement).getId();
-      }
-    } catch (Exception e) {
-      // Method not available or failed
-    }
-
-    return null;
   }
 
   /** Container for relationship maps extracted from diagrams. */
