@@ -5,11 +5,13 @@ import com.vp.plugin.ProjectManager;
 import com.vp.plugin.diagram.IDiagramElement;
 import com.vp.plugin.diagram.IDiagramUIModel;
 import com.vp.plugin.diagram.connector.IAssociationUIModel;
+import com.vp.plugin.diagram.connector.IContainmentUIModel;
 import com.vp.plugin.diagram.connector.IExtendUIModel;
 import com.vp.plugin.diagram.connector.IIncludeUIModel;
 import com.vp.plugin.diagram.connector.IRQRefineUIModel;
 import com.vp.plugin.diagram.connector.IRQTraceUIModel;
 import com.vp.plugin.diagram.connector.IRequirementDeriveUIModel;
+import com.vp.plugin.diagram.connector.ISatisfyUIModel;
 import com.vp.plugin.diagram.shape.IActorUIModel;
 import com.vp.plugin.diagram.shape.IRequirementUIModel;
 import com.vp.plugin.diagram.shape.IUseCaseUIModel;
@@ -121,7 +123,19 @@ public class NeedsRelationshipExtractor {
         } else if (element instanceof IRQRefineUIModel refineUI) {
           processRequirementRefineRelationship(refineUI, allRefinesRelationships);
         } else if (element instanceof IRQTraceUIModel traceUI) {
+          System.out.println("Found TRACE relationship: " + element.getClass().getSimpleName());
           processRequirementTraceRelationship(traceUI, allContainsRelationships);
+        } else if (element instanceof ISatisfyUIModel satisfyUI) {
+          System.out.println("Found SATISFY relationship: " + element.getClass().getSimpleName());
+          processRequirementSatisfyRelationship(satisfyUI, allContainsRelationships);
+        } else if (element instanceof IContainmentUIModel containmentUI) {
+          System.out.println(
+              "Found CONTAINMENT relationship: " + element.getClass().getSimpleName());
+          processContainmentRelationship(containmentUI, allContainsRelationships);
+        } else if (element.getClass().getSimpleName().toLowerCase().contains("connector")
+            || element.getClass().getSimpleName().toLowerCase().contains("ui")) {
+          System.out.println(
+              "DEBUG: Unknown connector type: " + element.getClass().getSimpleName());
         }
       }
     } catch (Exception e) {
@@ -295,6 +309,36 @@ public class NeedsRelationshipExtractor {
       }
     } catch (Exception e) {
       System.err.println("Error processing trace relationship: " + e.getMessage());
+    }
+  }
+
+  /** Process requirement satisfy relationship and add to global map (mapping to contains). */
+  private static void processRequirementSatisfyRelationship(
+      ISatisfyUIModel satisfyUI, Map<String, Set<String>> containsRelationships) {
+    try {
+      String fromId = getFromElementId(satisfyUI);
+      String toId = getToElementId(satisfyUI);
+
+      if (fromId != null && toId != null) {
+        containsRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
+      }
+    } catch (Exception e) {
+      System.err.println("Error processing satisfy relationship: " + e.getMessage());
+    }
+  }
+
+  /** Process containment relationship and add to global map. */
+  private static void processContainmentRelationship(
+      IContainmentUIModel containmentUI, Map<String, Set<String>> containsRelationships) {
+    try {
+      String fromId = getFromElementId(containmentUI);
+      String toId = getToElementId(containmentUI);
+
+      if (fromId != null && toId != null) {
+        containsRelationships.computeIfAbsent(fromId, k -> new HashSet<>()).add(toId);
+      }
+    } catch (Exception e) {
+      System.err.println("Error processing containment relationship: " + e.getMessage());
     }
   }
 
