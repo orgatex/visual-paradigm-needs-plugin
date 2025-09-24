@@ -5,12 +5,11 @@ import com.vp.plugin.action.VPAction;
 import com.vp.plugin.action.VPActionController;
 import javax.swing.SwingUtilities;
 
-/** Action controller for importing sphinx-needs JSON files into Visual Paradigm diagrams. */
-public class ImportNeedsToUseCaseDiagramActionController implements VPActionController {
+/** Action controller for importing Sphinx-Needs JSON files into Visual Paradigm diagrams. */
+public class ImportNeedsActionController implements VPActionController {
 
   @Override
   public void performAction(VPAction vpAction) {
-    // Show unified import dialog on EDT
     SwingUtilities.invokeLater(
         () -> {
           UnifiedImportDialog dialog = new UnifiedImportDialog();
@@ -20,7 +19,6 @@ public class ImportNeedsToUseCaseDiagramActionController implements VPActionCont
 
   @Override
   public void update(VPAction vpAction) {
-    // Always enable import action - no specific requirements needed
     vpAction.setEnabled(true);
   }
 }
