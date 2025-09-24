@@ -6,6 +6,7 @@ import com.vp.plugin.ProjectManager;
 import com.vp.plugin.model.IActor;
 import com.vp.plugin.model.IModelElement;
 import com.vp.plugin.model.IProject;
+import com.vp.plugin.model.IRequirement;
 import com.vp.plugin.model.IUseCase;
 import java.util.*;
 import lombok.AccessLevel;
@@ -54,8 +55,8 @@ public class NeedsModelExtractor {
           if (need != null) {
             needs.add(need);
           }
-        } else if (VpModelProcessor.isRequirementModel(element)) {
-          NeedsFile.Need need = processRequirement(element, vpIdToUserId);
+        } else if (element instanceof IRequirement requirement) {
+          NeedsFile.Need need = processRequirement(requirement, vpIdToUserId);
           if (need != null) {
             needs.add(need);
           }
@@ -155,7 +156,7 @@ public class NeedsModelExtractor {
 
   /** Process a requirement model element and convert to Need. */
   private static NeedsFile.Need processRequirement(
-      IModelElement requirement, Map<String, String> vpIdToUserId) {
+      IRequirement requirement, Map<String, String> vpIdToUserId) {
     try {
       String name = requirement.getName();
       if (name == null || name.trim().isEmpty()) {
@@ -167,8 +168,8 @@ public class NeedsModelExtractor {
 
       // Generate ID if not set
       if (id == null || id.trim().isEmpty()) {
-        id = "REQ_" + requirement.getId().substring(Math.max(0, requirement.getId().length() - 6));
-        System.out.println("Generated User ID for requirement '" + name + "': " + id);
+        id = "REQ_" + requirement.getId();
+        System.out.println("Using fallback ID for requirement '" + name + "': " + id);
       }
 
       // Track VP internal ID to User ID mapping

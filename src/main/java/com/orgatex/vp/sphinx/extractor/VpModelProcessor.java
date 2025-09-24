@@ -147,37 +147,6 @@ public class VpModelProcessor {
     };
   }
 
-  /** Check if a model element represents a requirement by examining its class structure. */
-  public static boolean isRequirementModel(IModelElement element) {
-    if (element == null) {
-      return false;
-    }
-
-    try {
-      // Check if the model element is a requirement by examining its class name
-      String className = element.getClass().getSimpleName();
-      return className.contains("Requirement")
-          || className.contains("IRequirement")
-          || isRequirementByFactoryType(element);
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  /** Check if model element is a requirement by checking factory type. */
-  private static boolean isRequirementByFactoryType(IModelElement element) {
-    try {
-      // Try to call requirement-specific methods to detect requirement type
-      java.lang.reflect.Method getPriorityMethod = element.getClass().getMethod("getPriority");
-      java.lang.reflect.Method getStatusMethod = element.getClass().getMethod("getStatus");
-
-      // If both methods exist and return appropriate types, likely a requirement
-      return getPriorityMethod != null && getStatusMethod != null;
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
   /** Sanitize a name for use as project name. */
   public static String sanitizeName(String input) {
     if (input == null || input.trim().isEmpty()) {
