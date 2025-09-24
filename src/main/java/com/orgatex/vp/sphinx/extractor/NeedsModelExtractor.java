@@ -80,13 +80,12 @@ public class NeedsModelExtractor {
         name = "Unnamed Use Case";
       }
 
-      // Use Visual Paradigm's User ID field
+      // Use Visual Paradigm's User ID field, with fallback to VP internal ID
       String id = VpModelProcessor.getUserId(useCase);
-
-      // Handle null User ID by skipping this use case if no User ID is set
       if (id == null || id.trim().isEmpty()) {
-        System.err.println("Warning: Skipping use case '" + name + "' - no User ID set");
-        return null; // Skip use cases without User ID
+        // Fallback: use VP internal ID with UC prefix for use cases
+        id = "UC_" + useCase.getId();
+        System.out.println("Using fallback ID for use case '" + name + "': " + id);
       }
 
       // Track VP internal ID to User ID mapping for relationship resolution
@@ -122,13 +121,12 @@ public class NeedsModelExtractor {
         name = "Unnamed Actor";
       }
 
-      // Use Visual Paradigm's User ID field for actors too
+      // Use Visual Paradigm's User ID field, with fallback to VP internal ID
       String id = VpModelProcessor.getUserId(actor);
-
-      // Handle null User ID by skipping this actor if no User ID is set
       if (id == null || id.trim().isEmpty()) {
-        System.err.println("Warning: Skipping actor '" + name + "' - no User ID set");
-        return null; // Skip actors without User ID
+        // Fallback: use VP internal ID with AC prefix for actors
+        id = "AC_" + actor.getId();
+        System.out.println("Using fallback ID for actor '" + name + "': " + id);
       }
 
       // Track VP internal ID to User ID mapping for relationship resolution

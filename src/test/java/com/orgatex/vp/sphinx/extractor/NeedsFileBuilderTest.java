@@ -11,15 +11,15 @@ import com.vp.plugin.diagram.shape.IUseCaseUIModel;
 import com.vp.plugin.model.IModelElement;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for UseCaseDiagramExtractor. */
-public class UseCaseDiagramExtractorTest {
+/** Unit tests for NeedsFileBuilder. */
+public class NeedsFileBuilderTest {
 
   @Test
   public void testExtractDiagramWithNullInput() {
     assertThrows(
         IllegalArgumentException.class,
         () -> {
-          UseCaseDiagramExtractor.extractDiagram(null);
+          NeedsFileBuilder.buildFromProject(null);
         });
   }
 
@@ -31,7 +31,7 @@ public class UseCaseDiagramExtractorTest {
     when(diagram.toDiagramElementArray()).thenReturn(new IDiagramElement[0]);
 
     // Extract
-    NeedsFile result = UseCaseDiagramExtractor.extractDiagram(diagram);
+    NeedsFile result = NeedsFileBuilder.buildFromProject(diagram.getName());
 
     // Verify
     assertNotNull(result);
@@ -76,7 +76,7 @@ public class UseCaseDiagramExtractorTest {
     when(diagram.toDiagramElementArray()).thenReturn(elements);
 
     // Extract
-    NeedsFile result = UseCaseDiagramExtractor.extractDiagram(diagram);
+    NeedsFile result = NeedsFileBuilder.buildFromProject(diagram.getName());
 
     // Verify
     assertNotNull(result);
@@ -97,7 +97,7 @@ public class UseCaseDiagramExtractorTest {
     when(diagram.getName()).thenReturn("Test Diagram With User IDs");
     when(diagram.toDiagramElementArray()).thenReturn(new IDiagramElement[0]);
 
-    NeedsFile result = UseCaseDiagramExtractor.extractDiagram(diagram);
+    NeedsFile result = NeedsFileBuilder.buildFromProject(diagram.getName());
 
     assertNotNull(result);
     assertEquals("Test Diagram With User IDs", result.getProject());
@@ -112,7 +112,7 @@ public class UseCaseDiagramExtractorTest {
     // Test via package-private access using reflection
     try {
       java.lang.reflect.Method sanitizeIdMethod =
-          UseCaseDiagramExtractor.class.getDeclaredMethod("sanitizeId", String.class);
+          VpModelProcessor.class.getDeclaredMethod("sanitizeId", String.class);
       sanitizeIdMethod.setAccessible(true);
 
       assertEquals("UC_LOGIN", sanitizeIdMethod.invoke(null, "UC_Login"));
@@ -129,7 +129,7 @@ public class UseCaseDiagramExtractorTest {
     // Test via package-private access using reflection
     try {
       java.lang.reflect.Method sanitizeTagMethod =
-          UseCaseDiagramExtractor.class.getDeclaredMethod("sanitizeTag", String.class);
+          VpModelProcessor.class.getDeclaredMethod("sanitizeTag", String.class);
       sanitizeTagMethod.setAccessible(true);
 
       assertEquals("user", sanitizeTagMethod.invoke(null, "User"));

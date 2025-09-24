@@ -59,7 +59,7 @@ public class SchemaValidationTest {
     when(diagram.toDiagramElementArray()).thenReturn(allElements);
 
     // Extract
-    NeedsFile result = UseCaseDiagramExtractor.extractDiagram(diagram);
+    NeedsFile result = NeedsFileBuilder.buildFromProject(diagram.getName());
 
     // Verify basic structure
     assertNotNull(result);

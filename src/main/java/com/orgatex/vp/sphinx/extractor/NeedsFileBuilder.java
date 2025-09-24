@@ -35,6 +35,9 @@ public class NeedsFileBuilder {
 
   /** Build a complete NeedsFile directly (for project-level extraction). */
   public static NeedsFile buildFromProject(String projectName) {
+    if (projectName == null) {
+      throw new IllegalArgumentException("Project name cannot be null");
+    }
     // Extract all models from the project
     NeedsModelExtractor.ExtractionResult modelResult = NeedsModelExtractor.extractAllModels();
 

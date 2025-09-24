@@ -1,6 +1,6 @@
 package com.orgatex.vp.sphinx.service;
 
-import com.orgatex.vp.sphinx.extractor.UseCaseDiagramExtractor;
+import com.orgatex.vp.sphinx.extractor.NeedsFileBuilder;
 import com.orgatex.vp.sphinx.generator.JsonExporter;
 import com.orgatex.vp.sphinx.model.NeedsFile;
 import com.orgatex.vp.sphinx.model.SphinxNeedsExportOption;
@@ -84,7 +84,7 @@ public class SphinxNeedsExporter {
 
   /** Extract content from a single diagram according to export options. */
   private NeedsFile extractDiagramContent(IDiagramUIModel diagram, SphinxNeedsExportOption option) {
-    NeedsFile needsFile = UseCaseDiagramExtractor.extractDiagram(diagram);
+    NeedsFile needsFile = NeedsFileBuilder.buildFromProject(diagram.getName());
 
     // Apply export filters based on options
     // Get the current version's needs

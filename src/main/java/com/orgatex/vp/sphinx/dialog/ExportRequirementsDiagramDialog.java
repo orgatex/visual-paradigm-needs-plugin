@@ -1,6 +1,6 @@
 package com.orgatex.vp.sphinx.dialog;
 
-import com.orgatex.vp.sphinx.extractor.RequirementsDiagramExtractor;
+import com.orgatex.vp.sphinx.extractor.NeedsFileBuilder;
 import com.orgatex.vp.sphinx.generator.JsonExporter;
 import com.orgatex.vp.sphinx.model.NeedsFile;
 import com.vp.plugin.ApplicationManager;
@@ -197,7 +197,7 @@ public class ExportRequirementsDiagramDialog extends JDialog {
               }
 
               // Extract requirements from diagram
-              NeedsFile needsFile = RequirementsDiagramExtractor.extractDiagram(activeDiagram);
+              NeedsFile needsFile = NeedsFileBuilder.buildFromProject(activeDiagram.getName());
 
               // Apply relationship filters based on checkbox selections
               if (!includeDeriveRelationshipsCheckBox.isSelected()) {
